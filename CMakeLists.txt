@@ -1,5 +1,5 @@
 idf_component_register(
-	SRCS "x_sockets.c"
+	SRCS "socketsX.c"
 	INCLUDE_DIRS "."
 	PRIV_INCLUDE_DIRS
 	REQUIRES hal_esp32 mbedtls
