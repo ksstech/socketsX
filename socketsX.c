@@ -144,8 +144,8 @@ int32_t	xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *f
 }
 
 int32_t	xNetMbedInit(netx_t * psConn) {
-	IF_myASSERT(debugMBEDTLS, INRANGE_SRAM(psConn->psSec)) ;
-	IF_myASSERT(debugMBEDTLS, INRANGE_FLASH(psConn->psSec->pcCert)) ;
+	IF_myASSERT(debugMBEDTLS, halCONFIG_inSRAM(psConn->psSec)) ;
+	IF_myASSERT(debugMBEDTLS, halCONFIG_inFLASH(psConn->psSec->pcCert)) ;
 	IF_myASSERT(debugMBEDTLS, psConn->psSec->szCert > 0) ;
 
 	mbedtls_net_init(&psConn->psSec->server_fd) ;
@@ -231,7 +231,7 @@ int32_t	xNetReport(netx_t * psConn, const char * pFname, int32_t Code, void * pB
 }
 
 int32_t	xNetGetHostByName(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	ip_addr_t	ip_addr ;
 	int32_t iRV = netconn_gethostbyname(psConn->pHost, &ip_addr) ;
 	if (iRV == 0) {
@@ -247,7 +247,7 @@ int32_t	xNetGetHostByName(netx_t * psConn) {
 }
 
 int32_t	xNetSocket(netx_t * psConn)  {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int32_t iRV = socket(psConn->sa_in.sin_family, psConn->type, IPPROTO_IP) ;
 	/* strictly speaking socket() can return any number from 0 upwards as a valid descriptor but
 	 * since 0=stdin, 1=stdout & 2=stderr the normal descriptor would be greater than 2 ie 3+ */
@@ -274,7 +274,7 @@ int32_t	xNetSecurePreConnect(netx_t * psConn) {	return 0 ; }
  * @return	0 if successful, -1 with error level set if not...
  */
 int32_t	xNetConnect(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
   	int32_t iRV = connect(psConn->sd, &psConn->sa, sizeof(struct sockaddr_in)) ;
    	if (iRV == 0) {
    		psConn->error	= 0 ;
@@ -292,7 +292,7 @@ int32_t	xNetConnect(netx_t * psConn) {
  * xNetSocketSetNonBlocking() -
  */
 int32_t	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	psConn->tOut	= mSecTime ;
 	int32_t iRV = ioctlsocket(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
 	if (iRV == 0) {
@@ -310,7 +310,7 @@ int32_t	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
  * xNetSetRecvTimeOut() -
  */
 int32_t	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	if (mSecTime <= flagXNET_NONBLOCK)
 		return xNetSetNonBlocking(psConn, mSecTime) ;
 
@@ -337,7 +337,7 @@ int32_t	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
  * xNetAdjustTimeout()
  */
 uint32_t  xNetAdjustTimeout(netx_t * psConn, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	psConn->trynow	= psConn->error	= 0 ;
 	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
 	if (mSecTime <= flagXNET_NONBLOCK) {
@@ -362,7 +362,7 @@ uint32_t  xNetAdjustTimeout(netx_t * psConn, uint32_t mSecTime) {
 }
 
 int32_t	xNetBindListen(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int32_t iRV = 0 ;
 	if (psConn->flags & SO_REUSEADDR) {
 		int enable = 1 ;
@@ -388,7 +388,7 @@ int32_t	xNetBindListen(netx_t * psConn) {
 }
 
 int32_t	xNetSecurePostConnect(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int32_t iRV = mbedtls_ssl_set_hostname(&psConn->psSec->ssl, psConn->pHost) ;
 	// OPTIONAL is not recommended for security but makes inter-operability easier
 	mbedtls_ssl_conf_authmode(&psConn->psSec->conf, psConn->psSec->Verify ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL) ;
@@ -417,7 +417,7 @@ int32_t	xNetSecurePostConnect(netx_t * psConn) {
  * @return	  status of last socket operation (ie < erSUCCESS indicates error code)
  */
 int32_t	xNetOpen(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int32_t	iRV ;
 	xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY) ;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
@@ -470,7 +470,7 @@ int32_t	xNetOpen(netx_t * psConn) {
  * 					on failure erFAILURE (-1) with error set...
  */
 int32_t	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psServCtx) && INRANGE_SRAM(psClntCtx)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psServCtx) && halCONFIG_inSRAM(psClntCtx)) ;
 	int32_t iRV = xNetSetRecvTimeOut(psServCtx, mSecTime) ;
 	if (iRV < 0)					return iRV ;
 
@@ -505,7 +505,7 @@ int32_t	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
  * @return
  */
 int32_t	xNetSelect(netx_t * psConn, uint8_t Flag) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn) && Flag < selFLAG_NUM) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && Flag < selFLAG_NUM) ;
 	// If the timeout is too short dont select() just simulate 1 socket ready...
 	if (psConn->tOut <= configXNET_MIN_TIMEOUT)	return 1 ;
 
@@ -539,7 +539,7 @@ int32_t	xNetSelect(netx_t * psConn, uint8_t Flag) {
  * @return	  result of the close (ie < erSUCCESS indicate error code)
  */
 int32_t	xNetClose(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int32_t	iRV = erSUCCESS ;
 	if (psConn->sd != -1) {
 		if (psConn->d_close) {
@@ -570,7 +570,7 @@ int32_t	xNetClose(netx_t * psConn) {
  */
 int32_t	xNetWrite(netx_t * psConn, char * pBuf, int32_t xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn) && INRANGE_MEM(pBuf) && xLen > 0) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inMEM(pBuf) && xLen > 0) ;
 	int32_t iRV ;
 	if (psConn->psSec) {
 		iRV = mbedtls_ssl_write(&psConn->psSec->ssl, (unsigned char *) pBuf, xLen) ;
@@ -604,7 +604,7 @@ int32_t	xNetWrite(netx_t * psConn, char * pBuf, int32_t xLen) {
  * 			on failure,
  */
 int32_t	xNetRead(netx_t * psConn, char * pBuf, int32_t xLen) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	int32_t	iRV ;
 	if (psConn->psSec) {
 		iRV = mbedtls_ssl_read( &psConn->psSec->ssl, (unsigned char *) pBuf, xLen) ;
@@ -642,8 +642,8 @@ int32_t	xNetRead(netx_t * psConn, char * pBuf, int32_t xLen) {
  * @return	number of bytes written (ie < erSUCCESS indicates error code)
  */
 int32_t	xNetWriteBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn)) ;
-	IF_myASSERT(debugPARAM, INRANGE_MEM(pBuf)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inMEM(pBuf)) ;
 	IF_myASSERT(debugPARAM, xLen > 0) ;
 	int32_t	iRV, xLenDone = 0 ;
 	mSecTime = xNetAdjustTimeout(psConn, mSecTime) ;
@@ -669,7 +669,7 @@ int32_t	xNetWriteBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSe
  * @return	  number of bytes read (ie < erSUCCESS indicates error code)
  */
 int32_t	xNetReadBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psConn) && INRANGE_SRAM(pBuf) && (xLen > 0)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	mSecTime = xNetAdjustTimeout(psConn, mSecTime) ;
 	xNetSetRecvTimeOut(psConn, mSecTime) ;
 	int32_t	iRV, xLenDone = 0 ;
@@ -687,7 +687,7 @@ int32_t	xNetReadBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSec
 #include	"x_ubuf.h"
 
 int32_t	xNetWriteFromBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psBuf) && INRANGE_SRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
 
 	int32_t	iRV = xNetWriteBlocks(psConn, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {
@@ -698,7 +698,7 @@ int32_t	xNetWriteFromBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
 }
 
 int32_t	xNetReadToBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
-	IF_myASSERT(debugPARAM, INRANGE_SRAM(psBuf) && INRANGE_SRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
 
 	int32_t iRV = xNetReadBlocks(psConn, psBuf->pBuf + psBuf->IdxWR, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {
