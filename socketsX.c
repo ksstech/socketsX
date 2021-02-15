@@ -298,7 +298,7 @@ int32_t	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
 	if (iRV == 0) {
 		psConn->error	= 0 ;
 		if (psConn->d_timing) {
-			SL_DBG("%d = %sBLOCKING", mSecTime, (mSecTime == 0) ? "" : "NON-") ;
+			SL_INFO("%d = %sBLOCKING", mSecTime, (mSecTime == 0) ? "" : "NON-") ;
 		}
 	} else {
 		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
@@ -325,7 +325,7 @@ int32_t	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
 			socklen_t SockOptLen ;
 			SockOptLen = sizeof(timeVal) ;
 			getsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen) ;
-			SL_DBG("tOut=%d mSec", (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC)) ;
+			SL_INFO("tOut=%d mSec", (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC)) ;
 		}
 	} else {
 		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
@@ -717,7 +717,7 @@ void	xNetReportStats(void) {
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
-	    	SL_DBG("sock: %d -- addr: %I, port: %d", sock, addr.sin_addr.s_addr, addr.sin_port) ;
+	    	SL_INFO("sock: %d -- addr: %I, port: %d", sock, addr.sin_addr.s_addr, addr.sin_port) ;
 	}
 	PRINT(
 #if		(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
