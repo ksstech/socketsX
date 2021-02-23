@@ -43,6 +43,7 @@
 	#include	"mbedtls/debug.h"
 #endif
 
+#include	<netdb.h>
 #include	<string.h>
 #include	<sys/errno.h>
 
@@ -219,6 +220,37 @@ int32_t	xNetReport(netx_t * psConn, const char * pFname, int32_t Code, void * pB
 
 int32_t	xNetGetHostByName(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
+#if 0
+	struct hostent * res = gethostbyname(psConn->pHost);
+	int32_t iRV = error() ;
+    if (res != NULL) {
+ 		psConn->error = 0 ;
+ 		uint32_t IP = res->h_addrlist[0] ;
+	    memcpy(&psConn->sa_in.sin_addr, &((struct sockaddr_in *)(res->ai_addr))->sin_addr, sizeof(psConn->sa_in.sin_addr));
+ 		if (debugOPEN || psConn->d_open)
+ 			xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
+    } else
+ 		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
+    freeaddrinfo(res);
+ 	return iRV ;
+#elif 0
+	const struct addrinfo hints = {
+		.ai_family = AF_INET,
+		.ai_socktype = SOCK_STREAM,
+	} ;
+	struct addrinfo * res = NULL ;
+	int32_t iRV = getaddrinfo(psConn->pHost, NULL, &hints, &res);
+	    if (iRV == 0 && res != NULL) {
+	 		psConn->error = 0 ;
+	 		psConn->sa_in.sin_family = AF_INET;
+		    memcpy(&psConn->sa_in.sin_addr, &((struct sockaddr_in *)(res->ai_addr))->sin_addr, sizeof(psConn->sa_in.sin_addr)) ;
+	 		if (debugOPEN || psConn->d_open)
+	 			xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
+	    } else
+	 		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
+	    freeaddrinfo(res);
+	 	return iRV ;
+#else
 	ip_addr_t	ip_addr ;
 	int32_t iRV = netconn_gethostbyname(psConn->pHost, &ip_addr) ;
 	if (iRV == 0) {
@@ -231,6 +263,7 @@ int32_t	xNetGetHostByName(netx_t * psConn) {
 		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
 	}
 	return iRV ;
+#endif
 }
 
 int32_t	xNetSocket(netx_t * psConn)  {
