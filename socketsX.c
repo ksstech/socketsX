@@ -103,9 +103,8 @@ int32_t	xNetGetError(netx_t * psConn, const char * pFname, int32_t eCode) {
 		else
 			pcMess = strerror(psConn->error) ;
 		xSyslog(SL_MOD2LOCAL(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR),
-				pFname,
-				"(%s:%d) err %d => %d (%s)",
-				psConn->pHost, ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess) ;
+				pFname, "(%s:%d) err %d => %d (%s)", psConn->pHost,
+				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess) ;
 	}
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
 	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
