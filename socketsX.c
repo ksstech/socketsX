@@ -115,10 +115,10 @@ int32_t	xNetGetError(netx_t * psConn, const char * pFname, int32_t eCode) {
 void	vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
 	netx_t * psCtx = ctx ;
 	if (psCtx->d_secure && psCtx->d_level >= level) {
-		PRINT("L=%d  %s", level, str ) ;
+		printfx("L=%d  %s", level, str ) ;
 		if (level == 4)
-			PRINT("  %d:%s", line, file) ;
-		PRINT("\n") ;
+			printfx("  %d:%s", line, file) ;
+		printfx("\n") ;
 	}
 }
 
@@ -204,28 +204,16 @@ void	vNetMbedDeInit(netx_t * psConn) {
  * xNetReport()
  */
 int32_t	xNetReport(netx_t * psConn, const char * pFname, int32_t Code, void * pBuf, int32_t xLen) {
-	printfx_lock() ;
-	printfx_nolock("%C%-s%C\t%s  %s://%-I:%d",
+	printfx("%C%-s%C\t%s  %s://%-I:%d",
 			xpfSGR(attrRESET, colourFG_CYAN, 0, 0), pFname, xpfSGR(attrRESET, 0, 0, 0),
 			(psConn->sa_in.sin_family == AF_INET) ? "ip4" : (psConn->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psConn->type == SOCK_DGRAM) ? "udp" : (psConn->type == SOCK_STREAM) ? "tcp" : "raw",
-			ntohl(psConn->sa_in.sin_addr.s_addr),
-			ntohs(psConn->sa_in.sin_port)) ;
-	printfx_nolock(" (%s)  sd=%d  %s=%d  Try=%d/%d",
-			psConn->pHost,
-			psConn->sd,
-			Code < erFAILURE ? strerror(Code) : (Code > 0) ? "Count" : "iRV", Code,
-			psConn->trynow,
-			psConn->trymax) ;
-	printfx_nolock("  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\n",
-			psConn->tOut,
-			psConn->d_flags,
-			psConn->flags,
-			psConn->error) ;
-	if (pBuf && (xLen > 0) && psConn->d_data) {
-		printfx_nolock("%!'+b", xLen, pBuf) ;
-	}
-	printfx_unlock() ;
+			ntohl(psConn->sa_in.sin_addr.s_addr), ntohs(psConn->sa_in.sin_port)) ;
+	printfx(" (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\n",
+			psConn->pHost, psConn->sd, Code < erFAILURE ? strerror(Code) : (Code > 0) ? "Count" : "iRV",
+			Code, psConn->trynow, psConn->trymax, psConn->tOut, psConn->d_flags, psConn->flags, psConn->error) ;
+	if (psConn->d_data && pBuf && xLen)
+		printfx("%!'+b", xLen, pBuf) ;
 	return erSUCCESS ;
 }
 
