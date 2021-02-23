@@ -32,7 +32,6 @@
 #include	"systiming.h"
 
 #include	"hal_config.h"
-#include	"hal_debug.h"
 #include	"hal_network.h"
 
 #include	"esp_log.h"

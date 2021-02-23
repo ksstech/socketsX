@@ -24,8 +24,6 @@
 
 #pragma once
 
-//#include	"hal_config.h"
-
 #include	"esp_netif.h"
 #include	"lwip/api.h"
 #include	"lwip/sockets.h"
