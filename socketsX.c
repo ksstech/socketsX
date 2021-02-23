@@ -81,6 +81,7 @@
 
 
 // ###################################### Local only functions #####################################
+
 /**
  * xNetGetError()
  * @param psConn
@@ -101,7 +102,7 @@ int32_t	xNetGetError(netx_t * psConn, const char * pFname, int32_t eCode) {
 		if (psConn->psSec)
 			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE) ;
 		else
-			pcMess = strerror(psConn->error) ;
+			pcMess = strerror(psConn->error) ;			// (char *) esp_err_to_name(psConn->error)
 		xSyslog(SL_MOD2LOCAL(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR),
 				pFname, "(%s:%d) err %d => %d (%s)", psConn->pHost,
 				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess) ;
