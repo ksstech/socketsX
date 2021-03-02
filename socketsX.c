@@ -206,7 +206,7 @@ void	vNetMbedDeInit(netx_t * psConn) {
  */
 int32_t	xNetReport(netx_t * psConn, const char * pFname, int32_t Code, void * pBuf, int32_t xLen) {
 	printfx("%C%-s%C\t%s  %s://%-I:%d",
-			xpfSGR(attrRESET, colourFG_CYAN, 0, 0), pFname, xpfSGR(attrRESET, 0, 0, 0),
+			xpfSGR(colourFG_CYAN, 0, 0, 0), pFname, xpfSGR(attrRESET, 0, 0, 0),
 			(psConn->sa_in.sin_family == AF_INET) ? "ip4" : (psConn->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psConn->type == SOCK_DGRAM) ? "udp" : (psConn->type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(psConn->sa_in.sin_addr.s_addr), ntohs(psConn->sa_in.sin_port)) ;
