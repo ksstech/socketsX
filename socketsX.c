@@ -411,12 +411,15 @@ int32_t	xNetSecurePostConnect(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int32_t iRV = mbedtls_ssl_set_hostname(&psConn->psSec->ssl, psConn->pHost) ;
 	// OPTIONAL is not recommended for security but makes inter-operability easier
-	mbedtls_ssl_conf_authmode(&psConn->psSec->conf, psConn->psSec->Verify ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL) ;
+	mbedtls_ssl_conf_authmode(&psConn->psSec->conf, psConn->psSec->Verify
+			? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL) ;
 	if (psConn->psSec->Verify) {
 		uint32_t Result ;
-		iRV = mbedtls_x509_crt_verify(&psConn->psSec->cacert, &psConn->psSec->cacert, NULL, NULL, &Result, xNetMbedVerify, psConn) ;
+		iRV = mbedtls_x509_crt_verify(&psConn->psSec->cacert, &psConn->psSec->cacert,
+			NULL, NULL, &Result, xNetMbedVerify, psConn) ;
 	}
-	mbedtls_ssl_set_bio(&psConn->psSec->ssl, &psConn->psSec->server_fd, mbedtls_net_send, mbedtls_net_recv, NULL) ;
+	mbedtls_ssl_set_bio(&psConn->psSec->ssl, &psConn->psSec->server_fd,
+			mbedtls_net_send, mbedtls_net_recv, NULL) ;
 
 	if (iRV == 0) {
 		psConn->error = 0 ;
@@ -590,7 +593,9 @@ int32_t	xNetClose(netx_t * psConn) {
  */
 int32_t	xNetWrite(netx_t * psConn, char * pBuf, int32_t xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inMEM(pBuf) && xLen > 0) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inMEM(pBuf)) ;
+	IF_myASSERT(debugPARAM, xLen > 0) ;
 	int32_t iRV ;
 	if (psConn->psSec) {
 		iRV = mbedtls_ssl_write(&psConn->psSec->ssl, (unsigned char *) pBuf, xLen) ;
