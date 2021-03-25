@@ -34,7 +34,6 @@
 #define	debugACCEPT					(debugFLAG & 0x0010)
 #define	debugSELECT					(debugFLAG & 0x0020)
 #define	debugMBEDTLS				(debugFLAG & 0x0040)
-#define	debugCIRCULAR				(debugFLAG & 0x0080)
 
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
@@ -124,9 +123,10 @@ int32_t	xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *f
 }
 
 int32_t	xNetMbedInit(netx_t * psConn) {
+	IF_TRACK(debugMBEDTLS, "Addr = %p  Size=%u", psConn->psSec->pcCert, psConn->psSec->szCert) ;
 	IF_myASSERT(debugMBEDTLS, halCONFIG_inSRAM(psConn->psSec)) ;
 	IF_myASSERT(debugMBEDTLS, halCONFIG_inFLASH(psConn->psSec->pcCert)) ;
-	IF_myASSERT(debugMBEDTLS, psConn->psSec->szCert > 0) ;
+	IF_myASSERT(debugMBEDTLS, psConn->psSec->szCert == strlen((const char *)psConn->psSec->pcCert) + 1) ;
 
 	mbedtls_net_init(&psConn->psSec->server_fd) ;
 	mbedtls_ssl_init(&psConn->psSec->ssl) ;
@@ -142,7 +142,7 @@ int32_t	xNetMbedInit(netx_t * psConn) {
 		return xNetGetError(psConn, "mbedtls_ctr_drbg_seed", iRV) ;
 	}
 #if 1
-	iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, psConn->psSec->pcCert, psConn->psSec->szCert) ;
+	iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcu8_t) psConn->psSec->pcCert, psConn->psSec->szCert) ;
 #else
 	if (psConn->psSec->pcCert) {			// use provided certificate
 		iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, psConn->psSec->pcCert, psConn->psSec->szCert) ;
