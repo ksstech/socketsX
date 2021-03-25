@@ -129,15 +129,15 @@ void	vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
  */
 int32_t	xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags) {
 	(void) data;
-	PRINT("Verifying certificate at depth %d:\n", depth);
+	printfx("xNetMbedVerify: Verifying certificate at depth %d:\n", depth);
 	pi8_t pBuf = malloc(xnetBUFFER_SIZE) ;
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
-	PRINT(pBuf);
+	printfx(pBuf);
 	if (*flags == 0) {
-		PRINT("No verification issue for this certificate\n");
+		printfx("xNetMbedVerify: No verification issue for this certificate\n");
 	} else {
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
-		PRINT("%s\n", pBuf);
+		printfx("xNetMbedVerify: %s\n", pBuf);
 	}
 	free(pBuf) ;
 	return 0 ;
@@ -744,7 +744,7 @@ void	xNetReportStats(void) {
 	    if (res == 0)
 	    	SL_INFO("sock: %d -- addr: %I, port: %d", sock, addr.sin_addr.s_addr, addr.sin_port) ;
 	}
-	PRINT(
+	cprintfx(
 #if		(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
