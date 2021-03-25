@@ -1,40 +1,15 @@
 /*
- * Copyright 2014-20 Andre M Maree / KSS Technologies (Pty) Ltd.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
- * and associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
- * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
+ * Copyright 2014-21 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-/*
- * x_sockets.c
- */
+#include	"hal_config.h"
 
 #include	"FreeRTOS_Support.h"
-
 #include	"socketsX.h"
 #include	"x_errors_events.h"
-#include	"x_time.h"
 #include	"printfx.h"									// +x_definitions +stdarg +stdint +stdio
 #include	"syslog.h"
 #include	"systiming.h"
-
-#include	"hal_config.h"
-#include	"hal_network.h"
-
-#include	"esp_log.h"
 
 #include	"mbedtls/certs.h"
 #include	"mbedtls/error.h"
@@ -45,14 +20,7 @@
 
 #include	<netdb.h>
 #include	<string.h>
-#include	<sys/errno.h>
-
-/* The problem with PRINT of printfx() or any of the variants from here are
- * a) if the channel, STDOUT or STDERR, is redirected to a TCP connection
- * b) and the TCP connection is dropped; then
- * c) the detection of the socket being closed (or other error)
- * 	will cause the system to want to send more data to the (closed) socket.....
- */
+#include	<errno.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
@@ -77,10 +45,23 @@
 
 #define	xnetBUFFER_SIZE 			1024
 
+// ######################################## Local constants ########################################
+
+
 // ####################################### Global variables ########################################
 
 
 // ###################################### Local only functions #####################################
+
+/* The problem with printfx() or any of the variants are
+ * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
+ * b) and the network connection is dropped; then
+ * c) the detection of the socket being closed (or other error)
+ * 	will cause the system to want to send more data to the (closed) socket.....
+ * In order to avoid recursing back into syslog in cases of network errors
+ * encountered in the syslog connection, we check on the ndebug flag.
+ * If set we change the severity to ONLY go to the console and
+ * not attempt to go out the network, which would bring it back here */
 
 /**
  * xNetGetError()
@@ -89,20 +70,18 @@
  * @return
  */
 int32_t	xNetGetError(netx_t * psConn, const char * pFname, int32_t eCode) {
-	if (psConn->psSec)
+	if (psConn->psSec) {
 		psConn->error = eCode==MBEDTLS_ERR_SSL_WANT_READ || eCode==MBEDTLS_ERR_SSL_WANT_WRITE ? EAGAIN : eCode ;
-	else
+	} else {
 		psConn->error = errno ? errno : eCode ;
-
-	/* In order to avoid recursing from syslog back into syslog in cases of network errors
-	 * encountered in the syslog connection, we change the severity here to ONLY go to the
-	 * console and not attempt to go out the network, which would bring it back here */
+	}
 	if (psConn->d_eagain || psConn->error != EAGAIN) {
 		char * pcMess = malloc(xnetBUFFER_SIZE) ;
-		if (psConn->psSec)
+		if (psConn->psSec) {
 			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE) ;
-		else
-			pcMess = strerror(psConn->error) ;			// (char *) esp_err_to_name(psConn->error)
+		} else {
+			pcMess = (char *) lwip_strerr(psConn->error) ;
+		}
 		xSyslog(SL_MOD2LOCAL(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR),
 				pFname, "(%s:%d) err %d => %d (%s)", psConn->pHost,
 				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess) ;
@@ -117,8 +96,9 @@ void	vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
 	netx_t * psCtx = ctx ;
 	if (psCtx->d_secure && psCtx->d_level >= level) {
 		printfx("L=%d  %s", level, str ) ;
-		if (level == 4)
+		if (level == 4) {
 			printfx("  %d:%s", line, file) ;
+		}
 		printfx("\n") ;
 	}
 }
@@ -158,27 +138,34 @@ int32_t	xNetMbedInit(netx_t * psConn) {
 	i8_t random_key[xpfMAX_LEN_X64] ;
 	int32_t iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime) ;
 	iRV = mbedtls_ctr_drbg_seed(&psConn->psSec->ctr_drbg, mbedtls_entropy_func, &psConn->psSec->entropy, (pcu8_t) random_key, iRV) ;
-	if (iRV != 0)					return xNetGetError(psConn, "mbedtls_ctr_drbg_seed", iRV) ;
+	if (iRV != 0) {
+		return xNetGetError(psConn, "mbedtls_ctr_drbg_seed", iRV) ;
+	}
 #if 1
 	iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, psConn->psSec->pcCert, psConn->psSec->szCert) ;
 #else
 	if (psConn->psSec->pcCert) {			// use provided certificate
-		iRV = mbedtls_x509_crt_parse( &psConn->psSec->cacert, psConn->psSec->pcCert, psConn->psSec->szCert);
+		iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, psConn->psSec->pcCert, psConn->psSec->szCert) ;
 	} else {							// use default certificate list
-		iRV = mbedtls_x509_crt_parse( &psConn->psSec->cacert, (pcu8_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len );
+		iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcu8_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len) ;
 	}
 #endif
-	if (iRV != 0)					return xNetGetError(psConn, "mbedtls_x509_crt_parse", iRV) ;
+	if (iRV != 0) {
+		return xNetGetError(psConn, "mbedtls_x509_crt_parse", iRV) ;
+	}
 
 	iRV = mbedtls_ssl_setup( &psConn->psSec->ssl, &psConn->psSec->conf) ;
-	if (iRV != 0)					return xNetGetError(psConn, "mbedtls_ssl_setup", iRV) ;
+	if (iRV != 0) {
+		return xNetGetError(psConn, "mbedtls_ssl_setup", iRV) ;
+	}
 
 	iRV = mbedtls_ssl_config_defaults(&psConn->psSec->conf,
 			(psConn->pHost == 0)			? MBEDTLS_SSL_IS_SERVER			: MBEDTLS_SSL_IS_CLIENT,
 			(psConn->type == SOCK_STREAM)	? MBEDTLS_SSL_TRANSPORT_STREAM	: MBEDTLS_SSL_TRANSPORT_DATAGRAM,
 			MBEDTLS_SSL_PRESET_DEFAULT) ;
-	if (iRV != 0)					return xNetGetError(psConn, "mbedtls_ssl_config_defaults", iRV) ;
-
+	if (iRV != 0) {
+		return xNetGetError(psConn, "mbedtls_ssl_config_defaults", iRV) ;
+	}
 	mbedtls_ssl_conf_ca_chain(&psConn->psSec->conf, &psConn->psSec->cacert, NULL) ;
 	mbedtls_ssl_conf_rng( &psConn->psSec->conf, mbedtls_ctr_drbg_random, &psConn->psSec->ctr_drbg );
 
@@ -213,8 +200,9 @@ int32_t	xNetReport(netx_t * psConn, const char * pFname, int32_t Code, void * pB
 	printfx(" (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\n",
 			psConn->pHost, psConn->sd, Code < erFAILURE ? strerror(Code) : (Code > 0) ? "Count" : "iRV",
 			Code, psConn->trynow, psConn->trymax, psConn->tOut, psConn->d_flags, psConn->flags, psConn->error) ;
-	if (psConn->d_data && pBuf && xLen)
-		printfx("%!'+b", xLen, pBuf) ;
+	if (psConn->d_data && pBuf && xLen) {
+		printfx("%!'+B", xLen, pBuf) ;
+	}
 	return erSUCCESS ;
 }
 
@@ -331,9 +319,9 @@ int32_t	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
  */
 int32_t	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-	if (mSecTime <= flagXNET_NONBLOCK)
+	if (mSecTime <= flagXNET_NONBLOCK) {
 		return xNetSetNonBlocking(psConn, mSecTime) ;
-
+	}
 	psConn->tOut	= mSecTime ;
 	struct timeval timeVal ;
 	timeVal.tv_sec	= psConn->tOut / MILLIS_IN_SECOND ;
@@ -455,32 +443,43 @@ int32_t	xNetOpen(netx_t * psConn) {
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psConn->pHost) {							// Client type connection ?
 		iRV = xNetGetHostByName(psConn) ;
-		if (iRV < erSUCCESS)		return iRV ;
+		if (iRV < erSUCCESS) {
+			return iRV ;
+		}
 	} else {
 		psConn->sa_in.sin_addr.s_addr	= htonl(INADDR_ANY) ;
 	}
 
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psConn) ;
-	if (iRV < erSUCCESS)			return iRV ;
+	if (iRV < erSUCCESS) {
+		return iRV ;
+	}
 
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 /*	if (psConn->psSec) {
 		iRV = xNetSecurePreConnect(psConn) ;
-		if (iRV < erSUCCESS)		return iRV ;
+		if (iRV < erSUCCESS) {
+			return iRV ;
+		}
 	}	*/
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psConn->pHost) ? xNetConnect(psConn) : xNetBindListen(psConn) ;
-	if (iRV < erSUCCESS)			return iRV ;
+	if (iRV < erSUCCESS) {
+		return iRV ;
+	}
 
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psConn->psSec) {
 		iRV = xNetSecurePostConnect(psConn) ;
-		if (iRV < erSUCCESS)		return iRV ;
+		if (iRV < erSUCCESS) {
+			return iRV ;
+		}
 	}
-	if (debugOPEN || psConn->d_open)
+	if (debugOPEN || psConn->d_open) {
 		xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
+	}
 	return iRV ;
 }
 
@@ -495,7 +494,9 @@ int32_t	xNetOpen(netx_t * psConn) {
 int32_t	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psServCtx) && halCONFIG_inSRAM(psClntCtx)) ;
 	int32_t iRV = xNetSetRecvTimeOut(psServCtx, mSecTime) ;
-	if (iRV < 0)					return iRV ;
+	if (iRV < 0) {
+		return iRV ;
+	}
 
 	memset(psClntCtx, 0, sizeof(netx_t)) ;		// clear the client context
 	socklen_t len = sizeof(struct sockaddr_in) ;
@@ -530,7 +531,9 @@ int32_t	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
 int32_t	xNetSelect(netx_t * psConn, uint8_t Flag) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && Flag < selFLAG_NUM) ;
 	// If the timeout is too short dont select() just simulate 1 socket ready...
-	if (psConn->tOut <= configXNET_MIN_TIMEOUT)	return 1 ;
+	if (psConn->tOut <= configXNET_MIN_TIMEOUT) {
+		return 1 ;
+	}
 
 	// Need to add code here to accommodate LwIP & OpenSSL for ESP32
 	fd_set	fdsSet ;
@@ -674,12 +677,20 @@ int32_t	xNetWriteBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSe
 	mSecTime = xNetAdjustTimeout(psConn, mSecTime) ;
 	do {
 		iRV = xNetSelect(psConn, selFLAG_WRITE) ;
-		if (iRV < 0)						break ;		// <0 = error
-		if (iRV == 0)						continue ;	// nothing to write, try again
+		if (iRV < 0) {
+			break ;
+		}
+		if (iRV == 0) {									// nothing to write
+			continue ;									// try again
+		}
 		iRV = xNetWrite(psConn, pBuf + xLenDone, xLen - xLenDone) ;
-		if (iRV > 0)						xLenDone += iRV ;
-		else if (psConn->error == EAGAIN)	continue ;
-		else								break ;
+		if (iRV > 0) {
+			xLenDone += iRV ;
+		} else if (psConn->error == EAGAIN)	{
+			continue ;
+		} else {
+			break ;
+		}
 	} while((++psConn->trynow < psConn->trymax) && (xLenDone < xLen)) ;
 	return (xLenDone > 0) ? xLenDone : iRV ;
 }
@@ -700,10 +711,14 @@ int32_t	xNetReadBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSec
 	int32_t	iRV, xLenDone = 0 ;
 	do {
 		iRV = xNetRead(psConn, pBuf + xLenDone, xLen - xLenDone) ;
-		if (iRV > 0)						xLenDone +=	iRV ;
-		else if (psConn->error == EAGAIN)	continue ;
-		else 								break ;
- 	} while ( (++psConn->trynow < psConn->trymax) && (xLenDone < xLen) ) ;
+		if (iRV > 0) {
+			xLenDone +=	iRV ;
+		} else if (psConn->error == EAGAIN)	{
+			continue ;
+		} else {
+			break ;
+		}
+ 	} while ((++psConn->trynow < psConn->trymax) && (xLenDone < xLen)) ;
 	return (xLenDone > 0) ? xLenDone : iRV ;
 }
 
