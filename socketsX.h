@@ -170,9 +170,9 @@ int32_t	xNetRead(netx_t * psConn, char * pBuf, int32_t xLen) ;
 int32_t	xNetReadBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSecTime) ;
 
 // read/write using managed buffers
-struct	ubuf_s ;
-int32_t	xNetWriteFromBuf(netx_t *, struct ubuf_s *, uint32_t) ;
-int32_t	xNetReadToBuf(netx_t *, struct ubuf_s *, uint32_t) ;
+struct	ubuf_t ;
+int32_t	xNetWriteFromBuf(netx_t *, struct ubuf_t *, uint32_t) ;
+int32_t	xNetReadToBuf(netx_t *, struct ubuf_t *, uint32_t) ;
 
 int32_t	xNetClose(netx_t * psConn) ;
 void	xNetReportStats(void) ;
