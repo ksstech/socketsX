@@ -211,14 +211,12 @@ int32_t	xNetGetHostByName(netx_t * psConn) {
 #if 1
 	const struct addrinfo hints = { .ai_family = AF_INET, .ai_socktype = SOCK_STREAM } ;
 	struct addrinfo * res = NULL ;
-	int32_t iRV = getaddrinfo(psConn->pHost, NULL, &hints, &res);
+	int iRV = getaddrinfo(psConn->pHost, NULL, &hints, &res);
 	if (iRV == 0 && res != NULL) {
 		psConn->error = 0 ;
 	 	psConn->sa_in.sin_family = AF_INET;
 		memcpy(&psConn->sa_in.sin_addr, &((struct sockaddr_in *)(res->ai_addr))->sin_addr, sizeof(psConn->sa_in.sin_addr)) ;
-	 	if (debugOPEN || psConn->d_open) {
-	 		xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
-	 	}
+	 	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
 	} else {
 		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
 	}
@@ -226,13 +224,11 @@ int32_t	xNetGetHostByName(netx_t * psConn) {
 	return iRV ;
 #else
 		ip_addr_t DstAddr = { 0 } ;
-		int32_t iRV = netconn_gethostbyname(psConn->pHost, &DstAddr) ;
+		int iRV = netconn_gethostbyname(psConn->pHost, &DstAddr) ;
 		if (iRV == 0) {
 			psConn->error = 0 ;
 			psConn->sa_in.sin_addr.s_addr = DstAddr.u_addr.ip4.addr ;
-			if (debugOPEN || psConn->d_open) {
-				xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
-			}
+			if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
 		} else {
 			iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
 		}
@@ -251,11 +247,9 @@ int32_t	xNetSocket(netx_t * psConn)  {
 		if (psConn->psSec) {
 			psConn->psSec->server_fd.fd = iRV ;
 		}
-		if (debugOPEN || psConn->d_open) {
-			xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
-		}
+		if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
 	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
+		iRV = xNetGetError(psConn, __FUNCTION__, iRV);
 	}
 	return iRV ;
 }
@@ -429,43 +423,31 @@ int32_t	xNetOpen(netx_t * psConn) {
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psConn->pHost) {							// Client type connection ?
 		iRV = xNetGetHostByName(psConn) ;
-		if (iRV < erSUCCESS) {
-			return iRV ;
-		}
+		if (iRV < erSUCCESS) return iRV;
 	} else {
 		psConn->sa_in.sin_addr.s_addr	= htonl(INADDR_ANY) ;
 	}
 
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psConn) ;
-	if (iRV < erSUCCESS) {
-		return iRV ;
-	}
+	if (iRV < erSUCCESS) return iRV;
 
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 /*	if (psConn->psSec) {
 		iRV = xNetSecurePreConnect(psConn) ;
-		if (iRV < erSUCCESS) {
-			return iRV ;
-		}
+		if (iRV < erSUCCESS) return iRV;
 	}	*/
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psConn->pHost) ? xNetConnect(psConn) : xNetBindListen(psConn) ;
-	if (iRV < erSUCCESS) {
-		return iRV ;
-	}
+	if (iRV < erSUCCESS) return iRV;
 
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psConn->psSec) {
 		iRV = xNetSecurePostConnect(psConn) ;
-		if (iRV < erSUCCESS) {
-			return iRV ;
-		}
+		if (iRV < erSUCCESS) return iRV;
 	}
-	if (debugOPEN || psConn->d_open) {
-		xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
-	}
+	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
 	return iRV ;
 }
 
