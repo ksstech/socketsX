@@ -206,7 +206,8 @@ int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 
 int	xNetGetHostByName(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-#if 1
+#if 0											// MEMORY LEAKS !!!
+	MEMORY_MARK();
 	const struct addrinfo hints = { .ai_family = AF_INET, .ai_socktype = SOCK_STREAM } ;
 	struct addrinfo * res = NULL ;
 	int iRV = getaddrinfo(psConn->pHost, NULL, &hints, &res);
@@ -219,7 +220,20 @@ int	xNetGetHostByName(netx_t * psConn) {
 		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
 	}
 	freeaddrinfo(res);
+	MEMORY_CHECK();
 	return iRV ;
+#elif 1
+	struct hostent * psHE = gethostbyname(psConn->pHost) ;
+	if (psHE == NULL) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	if ((psHE->h_addrtype == AF_INET)
+	&&	(psHE->h_addr_list != NULL)
+	&&	(psHE->h_addr_list[0] != NULL)) {
+		psConn->error = 0 ;
+		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
+		psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
+		if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, 0, 0, 0);
+	}
+	return erSUCCESS ;
 #else
 		ip_addr_t DstAddr = { 0 } ;
 		int iRV = netconn_gethostbyname(psConn->pHost, &DstAddr) ;

@@ -5,6 +5,9 @@
 #pragma once
 
 #include	"esp_netif.h"
+
+#include	"lwip/netdb.h"
+
 #include	"lwip/api.h"
 #include	"lwip/ip_addr.h"
 #include	"lwip/sockets.h"
