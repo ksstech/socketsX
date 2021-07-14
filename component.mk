@@ -1,1 +1,1 @@
-# "./z-components/statistics" Makefile.
+# pseudo component makefile.
