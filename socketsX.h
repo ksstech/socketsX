@@ -4,10 +4,11 @@
 
 #pragma once
 
+#include	"x_ubuf.h"				// FreeRTOS_Support
+
 #include	"esp_netif.h"
 
 #include	"lwip/netdb.h"
-
 #include	"lwip/api.h"
 #include	"lwip/ip_addr.h"
 #include	"lwip/sockets.h"
@@ -101,7 +102,7 @@ typedef struct netx_t {
 	} ;
 	const char *	pHost ;							// name of host to connect to
 	sock_sec_t *	psSec ;							// pointer to SSL/TLS config
-	int32_t			error ;							// error code return by last operation..
+	int				error ;							// error code return by last operation..
 	int				flags ;							// Check implementation
 	int16_t			sd ;							// socket descriptor
 	uint16_t		tOut ;							// last timeout in mSec
@@ -157,27 +158,26 @@ typedef	struct xnet_debug_t {
 
 // ####################################### Global Functions ########################################
 
-void	xNetRestartStack( void ) ;
-int32_t	xNetReport(netx_t * psConn, const char * pFname, int32_t Code, void * pBuf, int32_t xLen) ;
-int32_t	xNetGetHostByName(netx_t * psConn) ;
-int32_t	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) ;
-int32_t	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) ;
-int32_t	xNetSelect(netx_t * psConn, uint8_t Flag) ;
-int32_t	xNetOpen(netx_t * psConn) ;
-int32_t	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) ;
+void xNetRestartStack( void ) ;
+int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) ;
+int	xNetGetHostByName(netx_t * psConn) ;
+int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) ;
+int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) ;
+int	xNetSelect(netx_t * psConn, uint8_t Flag) ;
+int	xNetOpen(netx_t * psConn) ;
+int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) ;
 
 // read/write with traditional buffers
-int32_t	xNetWrite(netx_t * psConn, char * pBuf, int32_t xLen) ;
-int32_t	xNetWriteBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSecTime) ;
-int32_t	xNetRead(netx_t * psConn, char * pBuf, int32_t xLen) ;
-int32_t	xNetReadBlocks(netx_t * psConn, char * pBuf, int32_t xLen, uint32_t mSecTime) ;
+int	xNetWrite(netx_t * psConn, char * pBuf, int xLen) ;
+int	xNetWriteBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) ;
+int	xNetRead(netx_t * psConn, char * pBuf, int xLen) ;
+int	xNetReadBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) ;
 
 // read/write using managed buffers
-struct	ubuf_t ;
-int32_t	xNetWriteFromBuf(netx_t *, struct ubuf_t *, uint32_t) ;
-int32_t	xNetReadToBuf(netx_t *, struct ubuf_t *, uint32_t) ;
+int	xNetWriteFromBuf(netx_t *, ubuf_t *, uint32_t) ;
+int	xNetReadToBuf(netx_t *, ubuf_t *, uint32_t) ;
 
-int32_t	xNetClose(netx_t * psConn) ;
+int	xNetClose(netx_t * psConn) ;
 void	xNetReportStats(void) ;
 
 #ifdef __cplusplus
