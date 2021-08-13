@@ -195,25 +195,18 @@ int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 
 int	xNetGetHostByName(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-#if 0											// MEMORY LEAKS !!!
-	MEMORY_MARK();
-	const struct addrinfo hints = { .ai_family = AF_INET, .ai_socktype = SOCK_STREAM } ;
-	struct addrinfo * res = NULL ;
-	int iRV = getaddrinfo(psConn->pHost, NULL, &hints, &res);
-	if (iRV == 0 && res != NULL) {
-		psConn->error = 0 ;
-	 	psConn->sa_in.sin_family = AF_INET;
-		memcpy(&psConn->sa_in.sin_addr, &((struct sockaddr_in *)(res->ai_addr))->sin_addr, sizeof(psConn->sa_in.sin_addr)) ;
-	 	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-	}
-	freeaddrinfo(res);
-	MEMORY_CHECK();
-	return iRV ;
-#elif 1
 	struct hostent * psHE = gethostbyname(psConn->pHost) ;
 	if (psHE == NULL) return xNetGetError(psConn, __FUNCTION__, errno) ;
+#if 1
+	if ((psHE->h_addrtype != AF_INET)
+	||	(psHE->h_addr_list == NULL)
+	||	(psHE->h_addr_list[0] == NULL)) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	psConn->error = 0 ;
+	struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
+	psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
+	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, 0, 0, 0);
+	return erSUCCESS ;
+#else
 	if ((psHE->h_addrtype == AF_INET)
 	&&	(psHE->h_addr_list != NULL)
 	&&	(psHE->h_addr_list[0] != NULL)) {
@@ -221,19 +214,10 @@ int	xNetGetHostByName(netx_t * psConn) {
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
 		psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
 		if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, 0, 0, 0);
+	} else {
+		SL_ERR("ERROR!!!! %I \n", psConn->sa_in.sin_addr.s_addr);
 	}
 	return erSUCCESS ;
-#else
-		ip_addr_t DstAddr = { 0 } ;
-		int iRV = netconn_gethostbyname(psConn->pHost, &DstAddr) ;
-		if (iRV == 0) {
-			psConn->error = 0 ;
-			psConn->sa_in.sin_addr.s_addr = DstAddr.u_addr.ip4.addr ;
-			if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
-		} else {
-			iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-		}
-		return iRV ;
 #endif
 }
 

@@ -7,11 +7,10 @@
 #include	"x_ubuf.h"				// FreeRTOS_Support
 
 #include	"esp_netif.h"
-
-#include	"lwip/netdb.h"
-#include	"lwip/api.h"
+#include	"sys/socket.h"			// "lwip/sockets.h"
+#include	"netdb.h"				// "lwip/netdb.h"
 #include	"lwip/ip_addr.h"
-#include	"lwip/sockets.h"
+#include	"lwip/api.h"
 
 #include	"mbedtls/net_sockets.h"
 #include	"mbedtls/entropy.h"
@@ -110,7 +109,7 @@ typedef struct netx_t {
 	uint8_t			trymax ;						// max times to try read
 	uint8_t			trynow ;						// times tried
 	union {
-		struct {
+		struct __attribute__((packed)) {
 			uint8_t		connect	: 1 ;				// connected
 			uint8_t		d_ndebug: 1 ;				// change syslog level in xNetGetError()
 			uint8_t		d_eagain: 1 ;				// show EAGAIN errors
@@ -131,28 +130,6 @@ typedef struct netx_t {
 	size_t			maxRx ;
 } netx_t ;
 
-typedef	struct xnet_debug_t {
-	union {
-		uint32_t u32 ;
-		struct {
-			bool	http ;
-			bool	open ;
-			bool	write ;
-			bool	read ;
-			bool	data ;
-			bool	eagain ;
-			bool	secure ;
-			bool	verify ;
-			uint8_t	level	: 3 ;
-		} ;
-	} ;
-} xnet_debug_t ;
-
-#define	xnetDEBUG_FLAGS(A, B, C, D, E, F, G, H, I) (xnet_debug_t) \
-	{	.http=A, .open=B, .write=C, .read=D, .data=E,	\
-		.eagain=F,	.secure=G, .verify=H, .level=I	\
-	}
-
 // ####################################### Global variables ########################################
 
 
@@ -160,7 +137,7 @@ typedef	struct xnet_debug_t {
 
 void xNetRestartStack( void ) ;
 int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) ;
-int	xNetGetHostByName(netx_t * psConn) ;
+int	xNetGetHost(netx_t * psConn) ;
 int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) ;
 int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) ;
 int	xNetSelect(netx_t * psConn, uint8_t Flag) ;
@@ -178,7 +155,7 @@ int	xNetWriteFromBuf(netx_t *, ubuf_t *, uint32_t) ;
 int	xNetReadToBuf(netx_t *, ubuf_t *, uint32_t) ;
 
 int	xNetClose(netx_t * psConn) ;
-void	xNetReportStats(void) ;
+void xNetReportStats(void) ;
 
 #ifdef __cplusplus
 }
