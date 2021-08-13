@@ -23,7 +23,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xD000
+#define	debugFLAG					0xF041
 
 #define	debugOPEN					(debugFLAG & 0x0001)
 #define	debugCLOSE					(debugFLAG & 0x0002)
@@ -62,9 +62,9 @@
  * not attempt to go out the network, which would bring it back here */
 
 /**
- * xNetGetError()
- * @param psConn
- * @param eCode
+ * @brief
+ * @param	psConn
+ * @param	eCode
  * @return
  */
 int	xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
@@ -163,7 +163,7 @@ int	xNetMbedInit(netx_t * psConn) {
 	mbedtls_ssl_conf_ca_chain(&psConn->psSec->conf, &psConn->psSec->cacert, NULL) ;
 	mbedtls_ssl_conf_rng( &psConn->psSec->conf, mbedtls_ctr_drbg_random, &psConn->psSec->ctr_drbg );
 
-#if		defined(CONFIG_MBEDTLS_DEBUG) && (CONFIG_MBEDTLS_DEBUG == 1)
+#if	(CONFIG_MBEDTLS_DEBUG > 0)
 	if (psConn->d_secure) {
 		mbedtls_debug_set_threshold(CONFIG_MBEDTLS_DEBUG_LEVEL) ;
 		mbedtls_ssl_conf_dbg(&psConn->psSec->conf, vNetMbedDebug, psConn) ;
