@@ -120,10 +120,9 @@ int	xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags
 }
 
 int	xNetMbedInit(netx_t * psConn) {
-	IF_TRACK(debugMBEDTLS, "Addr = %p  Size=%u\n", psConn->psSec->pcCert, psConn->psSec->szCert) ;
-	IF_myASSERT(debugMBEDTLS, halCONFIG_inSRAM(psConn->psSec)) ;
-	IF_myASSERT(debugMBEDTLS, halCONFIG_inFLASH(psConn->psSec->pcCert)) ;
-	IF_myASSERT(debugMBEDTLS, psConn->psSec->szCert == strlen((const char *)psConn->psSec->pcCert) + 1) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn->psSec)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inFLASH(psConn->psSec->pcCert)) ;
+	IF_myASSERT(debugPARAM, psConn->psSec->szCert == strlen((const char *)psConn->psSec->pcCert) + 1) ;
 
 	mbedtls_net_init(&psConn->psSec->server_fd) ;
 	mbedtls_ssl_init(&psConn->psSec->ssl) ;
@@ -224,17 +223,14 @@ int	xNetGetHostByName(netx_t * psConn) {
 int	xNetSocket(netx_t * psConn)  {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int iRV = socket(psConn->sa_in.sin_family, psConn->type, IPPROTO_IP) ;
-	/* strictly speaking socket() can return any number from 0 upwards as a valid descriptor but
-	 * since 0=stdin, 1=stdout & 2=stderr the normal descriptor would be greater than 2 ie 3+ */
-	if (iRV >= 0) {
-		psConn->error	= 0 ;
-		psConn->sd 		= (int16_t) iRV ;			// successfully opened, save the socket descriptor
-		if (psConn->psSec) psConn->psSec->server_fd.fd = iRV ;
-		if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV);
-	}
-	return iRV ;
+	/* Socket() can return any number from 0 upwards as a valid descriptor but since
+	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
+	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno);
+	psConn->error = 0;
+	psConn->sd = (int16_t) iRV;
+	if (psConn->psSec) psConn->psSec->server_fd.fd = iRV;
+	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
+	return iRV;
 }
 
 int	xNetSecurePreConnect(netx_t * psConn) {	return 0 ; }
@@ -247,13 +243,10 @@ int	xNetSecurePreConnect(netx_t * psConn) {	return 0 ; }
 int	xNetConnect(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
   	int iRV = connect(psConn->sd, &psConn->sa, sizeof(struct sockaddr_in)) ;
-   	if (iRV == 0) {
-   		psConn->error	= 0 ;
-   		psConn->connect = 1 ;
-		if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
-   	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-	}
+  	if (iRV != 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	psConn->error	= 0 ;
+	psConn->connect = 1 ;
+	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
 	return iRV ;
 }
 
@@ -263,13 +256,11 @@ int	xNetConnect(netx_t * psConn) {
 int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	psConn->tOut	= mSecTime ;
-	int iRV = ioctlsocket(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
-	if (iRV == 0) {
-		psConn->error	= 0 ;
-		if (psConn->d_timing) SL_INFO("%d = %sBLOCKING", mSecTime, (mSecTime == 0) ? "" : "NON-") ;
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-	}
+//	int iRV = ioctlsocket(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
+	int iRV = ioctl(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
+	if (iRV != 0) return xNetGetError(psConn, __FUNCTION__, iRV) ;
+	psConn->error = 0 ;
+	if (psConn->d_timing) SL_INFO("%d = %sBLOCKING", mSecTime, (mSecTime == 0) ? "" : "NON-") ;
 	return iRV ;
 }
 
@@ -284,16 +275,13 @@ int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
 	timeVal.tv_sec	= psConn->tOut / MILLIS_IN_SECOND ;
 	timeVal.tv_usec = (psConn->tOut * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND ;
 	int iRV = setsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal)) ;	// Enable receive timeout
-	if (iRV >= 0) {
-		psConn->error	= 0 ;
-		if (psConn->d_timing) {
-			socklen_t SockOptLen ;
-			SockOptLen = sizeof(timeVal) ;
-			getsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen) ;
-			SL_INFO("tOut=%d mSec", (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC)) ;
-		}
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
+	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	psConn->error	= 0 ;
+	if (psConn->d_timing) {
+		socklen_t SockOptLen ;
+		SockOptLen = sizeof(timeVal) ;
+		getsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen) ;
+		SL_INFO("tOut=%d mSec", (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC)) ;
 	}
 	return iRV ;
 }
@@ -314,6 +302,7 @@ uint32_t xNetAdjustTimeout(netx_t * psConn, uint32_t mSecTime) {
 	if (mSecTime < configXNET_MIN_TIMEOUT) mSecTime = configXNET_MIN_TIMEOUT ;
 	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) psConn->trymax = configXNET_MAX_RETRIES ;
 	else psConn->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT ;
+
 	psConn->tOut = (psConn->trymax > 0) ? (mSecTime / psConn->trymax) : mSecTime ;
 	if (psConn->d_timing) xNetReport(psConn, __FUNCTION__, mSecTime, 0, 0) ;
 	return 	psConn->tOut ;
@@ -328,16 +317,12 @@ int	xNetBindListen(netx_t * psConn) {
 	}
 	if (iRV == 0) {
 		iRV = bind(psConn->sd, &psConn->sa, sizeof(struct sockaddr_in)) ;
-		if (iRV == 0) {
-			if (psConn->type == SOCK_STREAM) iRV = listen(psConn->sd, 10) ;	// config for listen, max queue backlog of 10
-		}
+		if (iRV == 0 && psConn->type == SOCK_STREAM)
+			iRV = listen(psConn->sd, 10) ;	// config for listen, max queue backlog of 10
 	}
-	if (iRV == 0) {
-		psConn->error = 0 ;
-		if (debugOPEN || psConn->d_open) xNetReport(psConn, "bind/listen", iRV, 0, 0) ;
-	} else {
-		iRV = xNetGetError(psConn, "bind/listen", iRV) ;
-	}
+	if (iRV < 0) return xNetGetError(psConn, "bind/listen", errno) ;
+	psConn->error = 0 ;
+	if (debugOPEN || psConn->d_open) xNetReport(psConn, "bind/listen", iRV, 0, 0) ;
 	return iRV ;
 }
 
@@ -354,13 +339,9 @@ int	xNetSecurePostConnect(netx_t * psConn) {
 	}
 	mbedtls_ssl_set_bio(&psConn->psSec->ssl, &psConn->psSec->server_fd,
 			mbedtls_net_send, mbedtls_net_recv, NULL) ;
-
-	if (iRV == 0) {
-		psConn->error = 0 ;
-		if (psConn->d_secure) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-	}
+	if (iRV != 0) return xNetGetError(psConn, __FUNCTION__, iRV) ;
+	psConn->error = 0 ;
+	if (psConn->d_secure) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
 	return iRV ;
 }
 
@@ -434,20 +415,17 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
 	/* Also need to consider adding a loop to repeat the accept()
 	 * in case of EAGAIN or POOL_IS_EMPTY errors */
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len) ;
-	if (iRV >= 0) {
-		psServCtx->error	= 0 ;
-		/* The server socket had flags set for BIND & LISTEN but the client
-		 * socket should just be connected and marked same type & flags */
-		psClntCtx->sd		= iRV ;
-		psClntCtx->type		= psServCtx->type ;			// Make same type TCP/UDP/RAW
-		psClntCtx->d_flags	= psServCtx->d_flags ;		// inherit all flags
-		psClntCtx->psSec	= psServCtx->psSec ;		// TBC same security ??
-		if (debugACCEPT || psServCtx->d_accept) {
-			xNetReport(psServCtx, __FUNCTION__, iRV, 0, 0) ;
-			xNetReport(psClntCtx, __FUNCTION__, iRV, 0, 0) ;
-		}
-	} else {
-		iRV = xNetGetError(psServCtx, __FUNCTION__, iRV) ;
+	if (iRV < 0) return xNetGetError(psServCtx, __FUNCTION__, errno) ;
+	psServCtx->error = 0 ;
+	/* The server socket had flags set for BIND & LISTEN but the client
+	 * socket should just be connected and marked same type & flags */
+	psClntCtx->sd		= iRV ;
+	psClntCtx->type		= psServCtx->type ;			// Make same type TCP/UDP/RAW
+	psClntCtx->d_flags	= psServCtx->d_flags ;		// inherit all flags
+	psClntCtx->psSec	= psServCtx->psSec ;		// TBC same security ??
+	if (debugACCEPT || psServCtx->d_accept) {
+		xNetReport(psServCtx, __FUNCTION__, iRV, 0, 0) ;
+		xNetReport(psClntCtx, __FUNCTION__, iRV, 0, 0) ;
 	}
 	return iRV ;
 }
@@ -474,16 +452,13 @@ int	xNetSelect(netx_t * psConn, uint8_t Flag) {
 	int iRV = select(psConn->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
 											(Flag == selFLAG_WRITE) ? &fdsSet : 0,
 											(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal) ;
-	if (iRV >= 0) {
-		psConn->error = 0 ;
-		if (debugSELECT || psConn->d_select) xNetReport(psConn,
-			Flag==selFLAG_READ ? "read/select" :
-			Flag==selFLAG_WRITE ? "write/select" :
-			Flag==selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0) ;
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-	}
-	return iRV ;
+	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	psConn->error = 0 ;
+	if (debugSELECT || psConn->d_select) xNetReport(psConn,
+		Flag == selFLAG_READ ? "read/select" :
+		Flag == selFLAG_WRITE ? "write/select" :
+		Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0) ;
+	return iRV;
 }
 
 /**
@@ -495,14 +470,14 @@ int	xNetClose(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int	iRV = erSUCCESS ;
 	if (psConn->sd != -1) {
-		if (psConn->d_close) xNetReport(psConn, "PreClose", psConn->error, 0, 0) ;
+		if (psConn->d_close) xNetReport(psConn, "xNetClose1", psConn->error, 0, 0) ;
 		if (psConn->psSec) {
 			mbedtls_ssl_close_notify(&psConn->psSec->ssl) ;
 			vNetMbedDeInit(psConn) ;
 		}
 		iRV = close(psConn->sd) ;
-		psConn->sd						= -1 ;				// mark as closed
-		if (debugCLOSE || psConn->d_close) xNetReport(psConn, "PostClose", iRV, 0, 0) ;
+		psConn->sd = -1 ;								// mark as closed
+		if (debugCLOSE || psConn->d_close) xNetReport(psConn, "xNetClose2", iRV, 0, 0) ;
 	}
 	return iRV ;
 }
@@ -532,14 +507,10 @@ int	xNetWrite(netx_t * psConn, char * pBuf, int xLen) {
 			iRV = sendto(psConn->sd, pBuf, xLen, psConn->flags, &psConn->sa, sizeof(psConn->sa_in)) ;
 		}
 	}
-
-	if (iRV > 0) {
-		psConn->error	= 0 ;
-		psConn->maxTx = (iRV > psConn->maxTx) ? iRV : psConn->maxTx ;
-		if (debugWRITE || psConn->d_write) xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-	}
+	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	psConn->error	= 0 ;
+	psConn->maxTx = (iRV > psConn->maxTx) ? iRV : psConn->maxTx ;
+	if (debugWRITE || psConn->d_write) xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
@@ -565,15 +536,11 @@ int	xNetRead(netx_t * psConn, char * pBuf, int xLen) {
 			iRV = recvfrom(psConn->sd, pBuf, xLen, psConn->flags, &psConn->sa, &i16AddrSize) ;
 		}
 	}
-
 	// handle possible errors and optional debug output
-	if (iRV > 0) {
-		psConn->error	= 0 ;
-		psConn->maxRx = (iRV > psConn->maxRx) ? iRV : psConn->maxRx ;
-		if (debugREAD || psConn->d_read) xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
-	} else {
-		iRV = xNetGetError(psConn, __FUNCTION__, iRV) ;
-	}
+	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	psConn->error	= 0 ;
+	psConn->maxRx = (iRV > psConn->maxRx) ? iRV : psConn->maxRx ;
+	if (debugREAD || psConn->d_read) xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV ;
 }
 
@@ -641,7 +608,6 @@ int	xNetReadBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) {
 
 int	xNetWriteFromBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
-
 	int	iRV = xNetWriteBlocks(psConn, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {
 		psBuf->IdxRD	+= iRV ;
@@ -652,7 +618,6 @@ int	xNetWriteFromBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
 
 int	xNetReadToBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
-
 	int iRV = xNetReadBlocks(psConn, psBuf->pBuf + psBuf->IdxWR, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {
 		psBuf->IdxWR	+= iRV ;
