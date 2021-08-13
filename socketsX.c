@@ -68,21 +68,27 @@
  * @return
  */
 int	xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
-	if (psConn->psSec) {
-		psConn->error = eCode==MBEDTLS_ERR_SSL_WANT_READ || eCode==MBEDTLS_ERR_SSL_WANT_WRITE ? EAGAIN : eCode ;
+	psConn->error = eCode;
+	char * pcMess = NULL ;
+	bool fAlloc = 0 ;
+	 // Lowest	: MBEDTLS_ERR_SSL_HW_ACCEL_FAILED  			-0x7F80
+	 // Highest	: MBEDTLS_ERR_PEM_NO_HEADER_FOOTER_PRESENT	-0x1080
+	if (INRANGE(-0x7F80, eCode, -0x1080, int)) {
+		if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
+			psConn->error = EAGAIN;
+		} else {
+			pcMess = malloc(xnetBUFFER_SIZE) ;
+			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
+			fAlloc = 1 ;
+		}
 	} else {
-		psConn->error = errno ? errno : eCode ;
+		pcMess = (char *) lwip_strerr(-eCode);
 	}
 	if (psConn->d_eagain || psConn->error != EAGAIN) {
-		char * pcMess = malloc(xnetBUFFER_SIZE) ;
-		if (psConn->psSec) {
-			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE) ;
-		} else {
-			pcMess = (char *) lwip_strerr(psConn->error) ;
-		}
 		xSyslog(SL_MOD2LOCAL(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR),
 				pFname, "(%s:%d) err %d => %d (%s)", psConn->pHost,
-				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess) ;
+				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess);
+		if (fAlloc) free(pcMess);
 	}
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
 	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
