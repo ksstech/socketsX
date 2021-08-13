@@ -192,7 +192,7 @@ int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 	return erSUCCESS ;
 }
 
-int	xNetGetHostByName(netx_t * psConn) {
+int	xNetGetHost(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	struct hostent * psHE = gethostbyname(psConn->pHost) ;
 	if (psHE == NULL) return xNetGetError(psConn, __FUNCTION__, errno) ;
@@ -367,7 +367,7 @@ int	xNetOpen(netx_t * psConn) {
 
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psConn->pHost) {							// Client type connection ?
-		iRV = xNetGetHostByName(psConn) ;
+		iRV = xNetGetHost(psConn) ;
 		if (iRV < erSUCCESS) return iRV;
 	} else {
 		psConn->sa_in.sin_addr.s_addr	= htonl(INADDR_ANY) ;
