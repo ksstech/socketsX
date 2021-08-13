@@ -566,7 +566,7 @@ int	xNetWriteBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) {
 		if (iRV < 0) break ;
 		if (iRV == 0) continue ;						// try again
 		iRV = xNetWrite(psConn, pBuf + xLenDone, xLen - xLenDone) ;
-		if (iRV > 0) {
+		if (iRV > -1) {
 			xLenDone += iRV ;
 		} else if (psConn->error == EAGAIN)	{
 			continue ;
@@ -593,7 +593,7 @@ int	xNetReadBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) {
 	int	iRV, xLenDone = 0 ;
 	do {
 		iRV = xNetRead(psConn, pBuf + xLenDone, xLen - xLenDone) ;
-		if (iRV > 0) {
+		if (iRV > -1) {
 			xLenDone +=	iRV ;
 		} else if (psConn->error == EAGAIN)	{
 			continue ;
