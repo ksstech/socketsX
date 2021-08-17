@@ -23,7 +23,7 @@
 
 // ############################### BUILD: debug configuration options ##############################
 
-#define	debugFLAG					0xF041
+#define	debugFLAG					0xF000
 
 #define	debugOPEN					(debugFLAG & 0x0001)
 #define	debugCLOSE					(debugFLAG & 0x0002)
@@ -201,29 +201,16 @@ int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 int	xNetGetHost(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	struct hostent * psHE = gethostbyname(psConn->pHost) ;
-	if (psHE == NULL) return xNetGetError(psConn, __FUNCTION__, errno) ;
-#if 1
-	if ((psHE->h_addrtype != AF_INET)
+	if ((psHE == NULL)
+	||	(psHE->h_addrtype != AF_INET)
 	||	(psHE->h_addr_list == NULL)
 	||	(psHE->h_addr_list[0] == NULL)) return xNetGetError(psConn, __FUNCTION__, errno) ;
+
 	psConn->error = 0 ;
 	struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
 	psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
 	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, 0, 0, 0);
 	return erSUCCESS ;
-#else
-	if ((psHE->h_addrtype == AF_INET)
-	&&	(psHE->h_addr_list != NULL)
-	&&	(psHE->h_addr_list[0] != NULL)) {
-		psConn->error = 0 ;
-		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
-		psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
-		if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, 0, 0, 0);
-	} else {
-		SL_ERR("ERROR!!!! %I \n", psConn->sa_in.sin_addr.s_addr);
-	}
-	return erSUCCESS ;
-#endif
 }
 
 int	xNetSocket(netx_t * psConn)  {
