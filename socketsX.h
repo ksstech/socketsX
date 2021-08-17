@@ -94,7 +94,7 @@ typedef struct sock_sec_t {
 	int8_t						Verify ;
 } sock_sec_t ;
 
-typedef struct netx_t {
+typedef struct __attribute__((aligned(4))) netx_t {
 	union {
 		struct	sockaddr_in	sa_in ;
 		struct	sockaddr	sa ;
@@ -103,11 +103,14 @@ typedef struct netx_t {
 	sock_sec_t *	psSec ;							// pointer to SSL/TLS config
 	int				error ;							// error code return by last operation..
 	int				flags ;							// Check implementation
+	size_t			maxTx ;
+	size_t			maxRx ;
 	int16_t			sd ;							// socket descriptor
 	uint16_t		tOut ;							// last timeout in mSec
 	uint8_t  		type ;							// STREAM/TCP, DGRAM/UDP or RAW/RAW
 	uint8_t			trymax ;						// max times to try read
 	uint8_t			trynow ;						// times tried
+	uint8_t			spare ;
 	union {
 		struct __attribute__((packed)) {
 			uint8_t		connect	: 1 ;				// connected
@@ -126,8 +129,6 @@ typedef struct netx_t {
 		} ;
 		uint16_t	d_flags ;
 	} ;
-	size_t			maxTx ;
-	size_t			maxRx ;
 } netx_t ;
 
 // ####################################### Global variables ########################################
