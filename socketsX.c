@@ -61,6 +61,12 @@
  * If set we change the severity to ONLY go to the console and
  * not attempt to go out the network, which would bring it back here */
 
+/*
+	Graceful close (unexpected) returns 0 but sets errno to 128
+	errno=128 NOT defined in errrno.h
+		https://github.com/espressif/esp-idf/issues/2540
+ */
+
 /**
  * @brief
  * @param	psConn
@@ -77,7 +83,7 @@ int	xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
 		if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
 			psConn->error = EAGAIN;
 		} else {
-			pcMess = malloc(xnetBUFFER_SIZE) ;
+			pcMess = pvRtosMalloc(xnetBUFFER_SIZE) ;
 			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
 			fAlloc = 1 ;
 		}
@@ -88,7 +94,7 @@ int	xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
 		xSyslog(SL_MOD2LOCAL(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR),
 				pFname, "(%s:%d) err %d => %d (%s)", psConn->pHost,
 				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess);
-		if (fAlloc) free(pcMess);
+		if (fAlloc) vRtosFree(pcMess);
 	}
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
 	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
@@ -112,7 +118,7 @@ void vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
 int	xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags) {
 	(void) data;
 	printfx("xNetMbedVerify: Verifying certificate at depth %d:\n", depth);
-	pi8_t pBuf = malloc(xnetBUFFER_SIZE) ;
+	pi8_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE) ;
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
 	printfx(pBuf);
 	if (*flags == 0) {
@@ -121,7 +127,7 @@ int	xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
 		printfx("xNetMbedVerify: %s\n", pBuf);
 	}
-	free(pBuf) ;
+	vRtosFree(pBuf) ;
 	return 0 ;
 }
 
