@@ -119,7 +119,8 @@ void vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
 	netx_t * psCtx = ctx ;
 	if (psCtx->d_secure && psCtx->d_level >= level) {
 		printfx("L=%d  %s", level, str ) ;
-		if (level == 4) printfx("  %d:%s", line, file) ;
+		if (level == 4)
+			printfx("  %d:%s", line, file) ;
 		printfx("\n") ;
 	}
 }
