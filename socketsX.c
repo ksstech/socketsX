@@ -207,13 +207,12 @@ void vNetMbedDeInit(netx_t * psConn) {
  * xNetReport()
  */
 int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) {
-	printfx("%C%-s%C\t%s  %s://%-I:%d",
-			xpfSGR(colourFG_CYAN, 0, 0, 0), pFname, xpfSGR(attrRESET, 0, 0, 0),
+	printfx("%C%-s%C\t%s  %s://%-I:%d (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\n",
+			colourFG_CYAN, pFname, attrRESET,
 			(psConn->sa_in.sin_family == AF_INET) ? "ip4" : (psConn->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psConn->type == SOCK_DGRAM) ? "udp" : (psConn->type == SOCK_STREAM) ? "tcp" : "raw",
-			ntohl(psConn->sa_in.sin_addr.s_addr), ntohs(psConn->sa_in.sin_port)) ;
-	printfx(" (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\n",
-			psConn->pHost, psConn->sd, Code < erFAILURE ? strerror(Code) : (Code > 0) ? "Count" : "iRV",
+			ntohl(psConn->sa_in.sin_addr.s_addr), ntohs(psConn->sa_in.sin_port),
+			psConn->pHost, psConn->sd, Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV",
 			Code, psConn->trynow, psConn->trymax, psConn->tOut, psConn->d_flags, psConn->flags, psConn->error) ;
 	if (psConn->d_data && pBuf && xLen)
 		printfx("%!'+B", xLen, pBuf);
