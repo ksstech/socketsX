@@ -652,7 +652,7 @@ void xNetReportStats(void) {
 	    if (res == 0)
 	    	SL_INFO("sock: %d -- addr: %I, port: %d", sock, addr.sin_addr.s_addr, addr.sin_port) ;
 	}
-	cprintfx(
+	printfx(
 #if		(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
