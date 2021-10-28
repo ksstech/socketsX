@@ -46,7 +46,7 @@
 // ######################################## Local constants ########################################
 
 
-// ####################################### Global variables ########################################
+// ####################################### Private variables ########################################
 
 
 // ###################################### Local only functions #####################################
@@ -63,7 +63,7 @@
 
 /*
 	Graceful close (unexpected) returns 0 but sets errno to 128
-	errno=128 NOT defined in errrno.h
+	errno=128 NOT defined in errno.h
 		https://github.com/espressif/esp-idf/issues/2540
  */
 
@@ -146,7 +146,8 @@ int	xNetMbedInit(netx_t * psConn) {
 	i8_t random_key[xpfMAX_LEN_X64] ;
 	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime) ;
 	iRV = mbedtls_ctr_drbg_seed(&psConn->psSec->ctr_drbg, mbedtls_entropy_func, &psConn->psSec->entropy, (pcu8_t) random_key, iRV) ;
-	if (iRV != 0) return xNetGetError(psConn, "mbedtls_ctr_drbg_seed", iRV) ;
+	if (iRV != 0)
+		return xNetGetError(psConn, "mbedtls_ctr_drbg_seed", iRV) ;
 #if 1
 	iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcu8_t) psConn->psSec->pcCert, psConn->psSec->szCert) ;
 #else
@@ -156,16 +157,17 @@ int	xNetMbedInit(netx_t * psConn) {
 		iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcu8_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len) ;
 	}
 #endif
-	if (iRV != 0) return xNetGetError(psConn, "mbedtls_x509_crt_parse", iRV) ;
-
+	if (iRV != 0)
+		return xNetGetError(psConn, "mbedtls_x509_crt_parse", iRV) ;
 	iRV = mbedtls_ssl_setup( &psConn->psSec->ssl, &psConn->psSec->conf) ;
-	if (iRV != 0) return xNetGetError(psConn, "mbedtls_ssl_setup", iRV) ;
-
+	if (iRV != 0)
+		return xNetGetError(psConn, "mbedtls_ssl_setup", iRV) ;
 	iRV = mbedtls_ssl_config_defaults(&psConn->psSec->conf,
 			(psConn->pHost == 0)			? MBEDTLS_SSL_IS_SERVER			: MBEDTLS_SSL_IS_CLIENT,
 			(psConn->type == SOCK_STREAM)	? MBEDTLS_SSL_TRANSPORT_STREAM	: MBEDTLS_SSL_TRANSPORT_DATAGRAM,
 			MBEDTLS_SSL_PRESET_DEFAULT) ;
-	if (iRV != 0) return xNetGetError(psConn, "mbedtls_ssl_config_defaults", iRV) ;
+	if (iRV != 0)
+		return xNetGetError(psConn, "mbedtls_ssl_config_defaults", iRV) ;
 	mbedtls_ssl_conf_ca_chain(&psConn->psSec->conf, &psConn->psSec->cacert, NULL) ;
 	mbedtls_ssl_conf_rng( &psConn->psSec->conf, mbedtls_ctr_drbg_random, &psConn->psSec->ctr_drbg );
 
@@ -200,7 +202,8 @@ int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 	printfx(" (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\n",
 			psConn->pHost, psConn->sd, Code < erFAILURE ? strerror(Code) : (Code > 0) ? "Count" : "iRV",
 			Code, psConn->trynow, psConn->trymax, psConn->tOut, psConn->d_flags, psConn->flags, psConn->error) ;
-	if (psConn->d_data && pBuf && xLen) printfx("%!'+B", xLen, pBuf);
+	if (psConn->d_data && pBuf && xLen)
+		printfx("%!'+B", xLen, pBuf);
 	return erSUCCESS ;
 }
 
@@ -257,9 +260,11 @@ int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
 	psConn->tOut	= mSecTime ;
 //	int iRV = ioctlsocket(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
 	int iRV = ioctl(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
-	if (iRV != 0) return xNetGetError(psConn, __FUNCTION__, iRV) ;
+	if (iRV != 0)
+		return xNetGetError(psConn, __FUNCTION__, iRV) ;
 	psConn->error = 0 ;
-	if (psConn->d_timing) SL_INFO("%d = %sBLOCKING", mSecTime, (mSecTime == 0) ? "" : "NON-") ;
+	if (psConn->d_timing)
+		SL_INFO("%d = %sBLOCKING", mSecTime, (mSecTime == 0) ? "" : "NON-") ;
 	return iRV ;
 }
 
@@ -268,13 +273,15 @@ int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
  */
 int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-	if (mSecTime <= flagXNET_NONBLOCK) return xNetSetNonBlocking(psConn, mSecTime) ;
+	if (mSecTime <= flagXNET_NONBLOCK)
+		return xNetSetNonBlocking(psConn, mSecTime) ;
 	psConn->tOut	= mSecTime ;
 	struct timeval timeVal ;
 	timeVal.tv_sec	= psConn->tOut / MILLIS_IN_SECOND ;
 	timeVal.tv_usec = (psConn->tOut * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND ;
 	int iRV = setsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal)) ;	// Enable receive timeout
-	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
+	if (iRV < 0)
+		return xNetGetError(psConn, __FUNCTION__, errno) ;
 	psConn->error	= 0 ;
 	if (psConn->d_timing) {
 		socklen_t SockOptLen ;
@@ -319,9 +326,11 @@ int	xNetBindListen(netx_t * psConn) {
 		if (iRV == 0 && psConn->type == SOCK_STREAM)
 			iRV = listen(psConn->sd, 10) ;	// config for listen, max queue backlog of 10
 	}
-	if (iRV < 0) return xNetGetError(psConn, "bind/listen", errno) ;
+	if (iRV < 0)
+		return xNetGetError(psConn, "bind/listen", errno) ;
 	psConn->error = 0 ;
-	if (debugOPEN || psConn->d_open) xNetReport(psConn, "bind/listen", iRV, 0, 0) ;
+	if (debugOPEN || psConn->d_open)
+		xNetReport(psConn, "bind/listen", iRV, 0, 0) ;
 	return iRV ;
 }
 
@@ -338,9 +347,11 @@ int	xNetSecurePostConnect(netx_t * psConn) {
 	}
 	mbedtls_ssl_set_bio(&psConn->psSec->ssl, &psConn->psSec->server_fd,
 			mbedtls_net_send, mbedtls_net_recv, NULL) ;
-	if (iRV != 0) return xNetGetError(psConn, __FUNCTION__, iRV) ;
+	if (iRV != 0)
+		return xNetGetError(psConn, __FUNCTION__, iRV) ;
 	psConn->error = 0 ;
-	if (psConn->d_secure) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
+	if (psConn->d_secure)
+		xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
 	return iRV ;
 }
 
@@ -354,7 +365,7 @@ int	xNetSecurePostConnect(netx_t * psConn) {
 int	xNetOpen(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int	iRV ;
-	xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY) ;
+	xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY);
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psConn->psSec) {
 		iRV = xNetMbedInit(psConn) ;
@@ -367,15 +378,16 @@ int	xNetOpen(netx_t * psConn) {
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psConn->pHost) {							// Client type connection ?
 		iRV = xNetGetHost(psConn) ;
-		if (iRV < erSUCCESS) return iRV;
+		if (iRV < erSUCCESS)
+			return iRV;
 	} else {
-		psConn->sa_in.sin_addr.s_addr	= htonl(INADDR_ANY) ;
+		psConn->sa_in.sin_addr.s_addr = htonl(INADDR_ANY) ;
 	}
 
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psConn) ;
-	if (iRV < erSUCCESS) return iRV;
-
+	if (iRV < erSUCCESS)
+		return iRV;
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 /*	if (psConn->psSec) {
 		iRV = xNetSecurePreConnect(psConn) ;
@@ -384,14 +396,16 @@ int	xNetOpen(netx_t * psConn) {
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psConn->pHost) ? xNetConnect(psConn) : xNetBindListen(psConn) ;
-	if (iRV < erSUCCESS) return iRV;
-
+	if (iRV < erSUCCESS)
+		return iRV;
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psConn->psSec) {
 		iRV = xNetSecurePostConnect(psConn) ;
-		if (iRV < erSUCCESS) return iRV;
+		if (iRV < erSUCCESS)
+			return iRV;
 	}
-	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
+	if (debugOPEN || psConn->d_open)
+		xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
 	return iRV ;
 }
 
@@ -449,14 +463,15 @@ int	xNetSelect(netx_t * psConn, uint8_t Flag) {
 
 	// then do select based on new timeout
 	int iRV = select(psConn->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
-											(Flag == selFLAG_WRITE) ? &fdsSet : 0,
-											(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal) ;
-	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
+									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
+									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal) ;
+	if (iRV < 0)
+		return xNetGetError(psConn, __FUNCTION__, errno) ;
 	psConn->error = 0 ;
-	if (debugSELECT || psConn->d_select) xNetReport(psConn,
-		Flag == selFLAG_READ ? "read/select" :
-		Flag == selFLAG_WRITE ? "write/select" :
-		Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0) ;
+	if (debugSELECT || psConn->d_select)
+		xNetReport(psConn, Flag == selFLAG_READ ? "read/select" :
+							Flag == selFLAG_WRITE ? "write/select" :
+							Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0) ;
 	return iRV;
 }
 
@@ -469,7 +484,8 @@ int	xNetClose(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int	iRV = erSUCCESS ;
 	if (psConn->sd != -1) {
-		if (psConn->d_close) xNetReport(psConn, "xNetClose1", psConn->error, 0, 0) ;
+		if (psConn->d_close)
+			xNetReport(psConn, "xNetClose1", psConn->error, 0, 0) ;
 		if (psConn->psSec) {
 			mbedtls_ssl_close_notify(&psConn->psSec->ssl) ;
 			vNetMbedDeInit(psConn) ;
