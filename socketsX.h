@@ -96,8 +96,9 @@ typedef struct sock_sec_t {
 
 typedef struct __attribute__((aligned(4))) netx_t {
 	union {
-		struct	sockaddr_in	sa_in ;
-		struct	sockaddr	sa ;
+		struct	sockaddr_storage ss;				// largest, ensure space for ANY type/size
+		struct	sockaddr_in sa_in;
+		struct	sockaddr sa;
 	} ;
 	const char *	pHost ;							// name of host to connect to
 	sock_sec_t *	psSec ;							// pointer to SSL/TLS config
