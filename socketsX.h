@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include	"x_ubuf.h"				// FreeRTOS_Support
+#include	<netinet/in.h>
+#include	<sys/socket.h>
+#include	<netdb.h>
 
 #include	"esp_netif.h"
-#include	"sys/socket.h"			// "lwip/sockets.h"
-#include	"netdb.h"				// "lwip/netdb.h"
-#include	"lwip/ip_addr.h"
-#include	"lwip/api.h"
+
+#include	"x_ubuf.h"				// FreeRTOS_Support
 
 #include	"mbedtls/net_sockets.h"
 #include	"mbedtls/entropy.h"

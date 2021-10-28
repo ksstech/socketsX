@@ -2,7 +2,8 @@
  * Copyright 2014-21 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include	"hal_config.h"
+
+#include	"hal_variables.h"
 #include	"socketsX.h"
 
 #include	"printfx.h"									// +x_definitions +stdarg +stdint +stdio
@@ -17,7 +18,6 @@
 	#include	"mbedtls/debug.h"
 #endif
 
-#include	<netdb.h>
 #include	<string.h>
 #include	<errno.h>
 
