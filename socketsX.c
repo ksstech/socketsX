@@ -220,19 +220,107 @@ int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 	return erSUCCESS ;
 }
 
-int	xNetGetHost(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-	struct hostent * psHE = gethostbyname(psConn->pHost) ;
-	if ((psHE == NULL)
-	||	(psHE->h_addrtype != AF_INET)
-	||	(psHE->h_addr_list == NULL)
-	||	(psHE->h_addr_list[0] == NULL)) return xNetGetError(psConn, __FUNCTION__, errno) ;
+#define OPT_RESOLVE					2
 
-	psConn->error = 0 ;
-	struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
-	psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
-	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, 0, 0, 0);
-	return erSUCCESS ;
+int	xNetGetHost(netx_t * psConn) {
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn));
+#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo
+
+	struct addrinfo hints;
+	struct addrinfo * res;
+	memset (&hints, 0, sizeof hints);
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_family = psConn->sa_in.sin_family;
+	hints.ai_socktype = psConn->type;
+	char portnum[16];
+	snprintfx(portnum, sizeof portnum, "%d", ntohs(psConn->sa_in.sin_port));
+	int iRV = getaddrinfo(psConn->pHost, portnum, &hints, &res);
+	if (iRV != 0 || res == NULL) {
+		CPRINT("Host=%s  iRV=%d\n", psConn->pHost, iRV);
+		iRV = xNetGetError(psConn, __FUNCTION__, iRV);
+	} else {
+		psConn->error = 0;
+		struct sockaddr_in * sa_in = (struct sockaddr_in *) res->ai_addr;
+		psConn->sa_in.sin_addr.s_addr = sa_in->sin_addr.s_addr;
+		CPRINT("Host=%s  AddrLen=%d  IP=%I", psConn->pHost, res->ai_addrlen, psConn->sa_in.sin_addr.s_addr);
+		if (debugOPEN || psConn->d_open)
+			xNetReport(psConn, __FUNCTION__, 0, 0, 0);
+	}
+	if (res != NULL)
+		freeaddrinfo(res);
+	return iRV;
+
+#elif (OPT_RESOLVE == 2)			// [lwip_]gethostbyname()
+
+	static SemaphoreHandle_t GetHostMux;
+	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
+	int iRV = erSUCCESS;
+	struct hostent * psHE = gethostbyname(psConn->pHost);
+//	CPRINT("Host=:%s  psHE=%p\n", psConn->pHost, psHE);
+//	IF_CPRINT(psHE, "Name=%s\n", psHE->h_name);
+//	IF_CPRINT(psHE, "Type=%d\n", psHE->h_addrtype);
+//	IF_CPRINT(psHE, "Len=%d\n", psHE->h_length);
+//	IF_CPRINT(psHE, "List=%p\n", psHE->h_addr_list);
+//	IF_CPRINT(psHE && psHE->h_addr_list, "List[0]=%p\n", psHE->h_addr_list[0]);
+//	IF_CPRINT(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I\n", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
+	if ((psHE == NULL) || (psHE->h_addrtype != AF_INET) ||
+		(psHE->h_addr_list == NULL) || (psHE->h_addr_list[0] == NULL)) {
+		iRV = xNetGetError(psConn, __FUNCTION__, h_errno);
+	} else {
+		psConn->error = iRV;
+		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
+		psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
+//		CPRINT("IP Address: %-#I\n", psConn->sa_in.sin_addr.s_addr);
+		if (debugOPEN || psConn->d_open)
+			xNetReport(psConn, __FUNCTION__, 0, 0, 0);
+	}
+	xRtosSemaphoreGive(&GetHostMux);
+	return iRV;
+
+#elif (OPT_RESOLVE == 3)			// [lwip_]gethostbyname_r()
+
+	static SemaphoreHandle_t GetHostMux;
+	int iRV = erSUCCESS;
+//	LLTRACK("Host=%s", psConn->pHost);
+	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
+	struct hostent * psHE = gethostbyname_r(psConn->pHost);
+//	LLTRACK("psHE=%p  AddrType=%d", psHE, psHE->h_addrtype);
+//	LLTRACK("AddrList=%p  AddrList[0]=%p", psHE->h_addr_list, psHE->h_addr_list[0]);
+	if ((psHE == NULL) || (psHE->h_addrtype != AF_INET) ||
+		(psHE->h_addr_list == NULL) || (psHE->h_addr_list[0] == NULL)) {
+		iRV = xNetGetError(psConn, __FUNCTION__, errno) ;
+	} else {
+//		LLTRACK();
+		psConn->error = 0 ;
+		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
+		psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
+		if (debugOPEN || psConn->d_open)
+			xNetReport(psConn, __FUNCTION__, 0, 0, 0);
+	}
+	xRtosSemaphoreGive(&GetHostMux);
+	return iRV;
+
+#elif (OPT_RESOLVE == 4)			// netconn_gethostbyname_addrtype()
+
+	ip_addr_t addr;
+	int iRV = netconn_gethostbyname_addrtype(psConn->pHost, &addr, AF_INET);
+	TRACK("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d\n", psConn->pHost, iRV, addr.type,
+		sizeof(struct sockaddr_storage), sizeof(struct sockaddr), sizeof(struct sockaddr_in));
+	if (iRV == ERR_OK) {
+		TRACK();
+		psConn->error = 0;
+		struct sockaddr_in * psSAI = &psConn->sa_in;
+//		psConn->sa_in.sin_addr.s_addr = addr.u_addr.ip4.addr;
+		psSAI->sin_addr.s_addr = addr.u_addr.ip4.addr;
+		if (debugOPEN || psConn->d_open)
+			xNetReport(psConn, __FUNCTION__, 0, 0, 0);
+	} else {
+		TRACK();
+		iRV = xNetGetError(psConn, __FUNCTION__, errno);
+	}
+	return iRV;
+
+#endif
 }
 
 int	xNetSocket(netx_t * psConn)  {
