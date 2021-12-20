@@ -631,10 +631,14 @@ int	xNetWrite(netx_t * psConn, char * pBuf, int xLen) {
 			iRV = sendto(psConn->sd, pBuf, xLen, psConn->flags, &psConn->sa, sizeof(psConn->sa_in)) ;
 		}
 	}
-	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
-	psConn->error	= 0 ;
+	if (iRV < 0) {
+		return xNetGetError(psConn, __FUNCTION__, errno) ;
+	}
+	psConn->error = 0 ;
 	psConn->maxTx = (iRV > psConn->maxTx) ? iRV : psConn->maxTx ;
-	if (debugWRITE || psConn->d_write) xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugWRITE || psConn->d_write) {
+		xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
+	}
 	return iRV;
 }
 
@@ -660,11 +664,14 @@ int	xNetRead(netx_t * psConn, char * pBuf, int xLen) {
 			iRV = recvfrom(psConn->sd, pBuf, xLen, psConn->flags, &psConn->sa, &i16AddrSize) ;
 		}
 	}
-	// handle possible errors and optional debug output
-	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno) ;
-	psConn->error	= 0 ;
+	if (iRV < 0) {
+		return xNetGetError(psConn, __FUNCTION__, errno) ;
+	}
+	psConn->error = 0 ;
 	psConn->maxRx = (iRV > psConn->maxRx) ? iRV : psConn->maxRx ;
-	if (debugREAD || psConn->d_read) xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugREAD || psConn->d_read) {
+		xNetReport(psConn, __FUNCTION__, iRV, pBuf, iRV);
+	}
 	return iRV ;
 }
 
