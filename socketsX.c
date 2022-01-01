@@ -383,14 +383,14 @@ int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
 int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	if (mSecTime <= flagXNET_NONBLOCK)
-		return xNetSetNonBlocking(psConn, mSecTime) ;
+		return xNetSetNonBlocking(psConn, mSecTime);
 	psConn->tOut	= mSecTime ;
 	struct timeval timeVal ;
 	timeVal.tv_sec	= psConn->tOut / MILLIS_IN_SECOND ;
 	timeVal.tv_usec = (psConn->tOut * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND ;
-	int iRV = setsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal)) ;	// Enable receive timeout
+	int iRV = setsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal));
 	if (iRV < 0)
-		return xNetGetError(psConn, __FUNCTION__, errno) ;
+		return xNetGetError(psConn, __FUNCTION__, errno);
 	psConn->error	= 0 ;
 	if (psConn->d_timing) {
 		socklen_t SockOptLen ;
