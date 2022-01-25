@@ -366,7 +366,7 @@ int	xNetConnect(netx_t * psConn) {
  */
 int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-	psConn->tOut	= mSecTime ;
+	psConn->tOut = mSecTime ;
 //	int iRV = ioctlsocket(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
 	int iRV = ioctl(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
 	if (iRV != 0)
@@ -410,16 +410,20 @@ uint32_t xNetAdjustTimeout(netx_t * psConn, uint32_t mSecTime) {
 	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
 	if (mSecTime <= flagXNET_NONBLOCK) {
 		psConn->trymax	= 1 ;
- 		psConn->tOut = mSecTime ;						// changed, CHECK !!!
+ 		psConn->tOut = mSecTime;
 		return mSecTime ;
 	}
 	// adjust the lower limit.
-	if (mSecTime < configXNET_MIN_TIMEOUT) mSecTime = configXNET_MIN_TIMEOUT ;
-	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) psConn->trymax = configXNET_MAX_RETRIES ;
-	else psConn->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT ;
+	if (mSecTime < configXNET_MIN_TIMEOUT)
+		mSecTime = configXNET_MIN_TIMEOUT ;
+	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES)
+		psConn->trymax = configXNET_MAX_RETRIES ;
+	else
+		psConn->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT ;
 
 	psConn->tOut = (psConn->trymax > 0) ? (mSecTime / psConn->trymax) : mSecTime ;
-	if (psConn->d_timing) xNetReport(psConn, __FUNCTION__, mSecTime, 0, 0) ;
+	if (psConn->d_timing)
+		xNetReport(psConn, __FUNCTION__, mSecTime, 0, 0) ;
 	return 	psConn->tOut ;
 }
 
