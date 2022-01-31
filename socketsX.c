@@ -622,9 +622,7 @@ int	xNetClose(netx_t * psConn) {
  */
 int	xNetWrite(netx_t * psConn, char * pBuf, int xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-	IF_myASSERT(debugPARAM, halCONFIG_inMEM(pBuf)) ;
-	IF_myASSERT(debugPARAM, xLen > 0) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inMEM(pBuf) &&  xLen > 0);
 	int iRV ;
 	if (psConn->psSec) {
 		iRV = mbedtls_ssl_write(&psConn->psSec->ssl, (unsigned char *) pBuf, xLen) ;
