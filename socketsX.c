@@ -59,13 +59,28 @@
  * In order to avoid recursing back into syslog in cases of network errors
  * encountered in the syslog connection, we check on the ndebug flag.
  * If set we change the severity to ONLY go to the console and
- * not attempt to go out the network, which would bring it back here */
-
-/*
-	Graceful close (unexpected) returns 0 but sets errno to 128
-	errno=128 NOT defined in errno.h
-		https://github.com/espressif/esp-idf/issues/2540
+ * not attempt to go out the network, which would bring it back here
+ *
+ * Graceful close (unexpected) returns 0 but sets errno to 128
+ * errno = 128 NOT defined in errno.h
+ *		https://github.com/espressif/esp-idf/issues/2540
  */
+
+/**
+ *
+ */
+EventBits_t xNetWaitLx(TickType_t xTicks) {
+	EventBits_t xBits;
+	xTicks = (xTicks < 100) ? 100 : (xTicks == portMAX_DELAY) ? portMAX_DELAY : (xTicks + 5) % 10;
+	do {
+		xBits = xRtosWaitStatusANY(flagL3_ANY, pdMS_TO_TICKS(10));
+		if (((xBits & flagLX_STA) == flagLX_STA) || ((xBits & flagLX_SAP) == flagLX_SAP))
+			return xBits;
+		if (xTicks != portMAX_DELAY)
+			xTicks -= 10;
+	} while (xTicks);
+	return xBits;
+}
 
 /**
  * @brief
@@ -481,7 +496,7 @@ int	xNetSecurePostConnect(netx_t * psConn) {
 int	xNetOpen(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	int	iRV ;
-	xRtosWaitStatusANY(flagL3_ANY, portMAX_DELAY);
+	xNetWaitLx(portMAX_DELAY);
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psConn->psSec) {
 		iRV = xNetMbedInit(psConn) ;

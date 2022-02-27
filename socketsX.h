@@ -143,6 +143,7 @@ int	xNetGetHost(netx_t * psConn) ;
 int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) ;
 int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) ;
 int	xNetSelect(netx_t * psConn, uint8_t Flag) ;
+EventBits_t xNetWaitLx(TickType_t xTicks);
 int	xNetOpen(netx_t * psConn) ;
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) ;
 
