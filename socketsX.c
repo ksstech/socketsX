@@ -107,7 +107,7 @@ EventBits_t xNetWaitLx(TickType_t xTicks) {
 		pcMess = (char *) lwip_strerr(-eCode);
 	}
 	if (psConn->d_eagain || psConn->error != EAGAIN) {
-		vSyslog(SL_MOD2LOCAL(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR),
+		vSyslog(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR,
 				pFname, "(%s:%d) err %d => %d (%s)", psConn->pHost,
 				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess);
 		if (fAlloc)
@@ -119,8 +119,8 @@ EventBits_t xNetWaitLx(TickType_t xTicks) {
 #else
 	psConn->error = eCode;
 	if (psConn->d_eagain || psConn->error != EAGAIN) {
-		int Level = (psConn->d_ndebug == 0) ? (ioB3GET(ioSLhost) + 1) : SL_SEV_ERROR;
-		vSyslog(SL_MOD2LOCAL(Level), pFname, "(%s:%d) err %d (%s)",
+		int Level = psConn->d_ndebug ? SL_SEV_ERROR : ioB3GET(ioSLhost) + 1;
+		vSyslog(Level, pFname, "(%s:%d) err %d (%s)",
 				psConn->pHost, ntohs(psConn->sa_in.sin_port), eCode, esp_err_to_name(eCode));
 	}
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
