@@ -73,7 +73,7 @@
  * @param	eCode
  * @return
  */
-int	xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
+ int	xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
 #if 0
 	psConn->error = eCode;
 	bool fAlloc = 0;
@@ -336,11 +336,14 @@ int	xNetSocket(netx_t * psConn)  {
 	int iRV = socket(psConn->sa_in.sin_family, psConn->type, IPPROTO_IP) ;
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
-	if (iRV < 0) return xNetGetError(psConn, __FUNCTION__, errno);
+	if (iRV < 0)
+		return xNetGetError(psConn, __FUNCTION__, errno);
 	psConn->error = 0;
 	psConn->sd = (int16_t) iRV;
-	if (psConn->psSec) psConn->psSec->server_fd.fd = iRV;
-	if (debugOPEN || psConn->d_open) xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
+	if (psConn->psSec)
+		psConn->psSec->server_fd.fd = iRV;
+	if (debugOPEN || psConn->d_open)
+		xNetReport(psConn, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -533,15 +536,16 @@ int	xNetOpen(netx_t * psConn) {
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psServCtx) && halCONFIG_inSRAM(psClntCtx)) ;
 	int iRV = xNetSetRecvTimeOut(psServCtx, mSecTime) ;
-	if (iRV < 0) return iRV;
-
+	if (iRV < 0)
+		return iRV;
 	memset(psClntCtx, 0, sizeof(netx_t)) ;		// clear the client context
 	socklen_t len = sizeof(struct sockaddr_in) ;
 
 	/* Also need to consider adding a loop to repeat the accept()
 	 * in case of EAGAIN or POOL_IS_EMPTY errors */
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len) ;
-	if (iRV < 0) return xNetGetError(psServCtx, __FUNCTION__, errno) ;
+	if (iRV < 0)
+		return xNetGetError(psServCtx, __FUNCTION__, errno) ;
 	psServCtx->error = 0 ;
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
@@ -605,7 +609,8 @@ int	xNetClose(netx_t * psConn) {
 		}
 		iRV = close(psConn->sd) ;
 		psConn->sd = -1 ;								// mark as closed
-		if (debugCLOSE || psConn->d_close) xNetReport(psConn, "xNetClose2", iRV, 0, 0) ;
+		if (debugCLOSE || psConn->d_close)
+			xNetReport(psConn, "xNetClose2", iRV, 0, 0) ;
 	}
 	return iRV ;
 }
