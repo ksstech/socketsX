@@ -129,21 +129,22 @@ typedef struct __attribute__((aligned(4))) netx_t {
 			uint8_t		d_level	: 4 ;				// Mbed TLS 1+ value to set max level
 		} ;
 		uint16_t	d_flags ;
-	} ;
+	};
 } netx_t ;
+//DUMB_STATIC_ASSERT( sizeof(netx_t) == 8) ;
 
 // ####################################### Global variables ########################################
 
 
 // ####################################### Global Functions ########################################
 
-void xNetRestartStack( void ) ;
+void xNetRestartStack( void );
+EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks);
 int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) ;
-int	xNetGetHost(netx_t * psConn) ;
+//int	xNetGetHost(netx_t * psConn) ;
 int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) ;
 int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) ;
 int	xNetSelect(netx_t * psConn, uint8_t Flag) ;
-EventBits_t xNetWaitLx(TickType_t xTicks);
 int	xNetOpen(netx_t * psConn) ;
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) ;
 
