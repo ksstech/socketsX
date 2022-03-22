@@ -2,6 +2,7 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
+#include	<string.h>
 
 #include	"hal_variables.h"
 #include	"socketsX.h"
@@ -17,9 +18,6 @@
 #ifdef	CONFIG_MBEDTLS_DEBUG
 	#include	"mbedtls/debug.h"
 #endif
-
-#include	<string.h>
-#include	<errno.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
