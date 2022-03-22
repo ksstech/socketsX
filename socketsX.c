@@ -89,7 +89,6 @@ EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks) {
  * @return
  */
 static int xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
-#if 0
 	psConn->error = eCode;
 	bool fAlloc = 0;
 	char * pcMess = NULL ;
@@ -104,30 +103,22 @@ static int xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
 			fAlloc = 1 ;
 		}
 	} else {
-		pcMess = (char *) lwip_strerr(-eCode);
+		#ifdef LWIP_PROVIDE_ERRNO
+		pcMess = (char *) lwip_strerr(eCode);
+		#else
+		pcMess = (char *) strerror(eCode);
+		#endif
 	}
-	if (psConn->d_eagain || psConn->error != EAGAIN) {
-		vSyslog(psConn->d_ndebug ? SL_SEV_DEBUG : SL_SEV_ERROR,
-				pFname, "(%s:%d) err %d => %d (%s)", psConn->pHost,
-				ntohs(psConn->sa_in.sin_port), eCode, psConn->error, pcMess);
-		if (fAlloc)
-			vRtosFree(pcMess);
-	}
-	/* XXX: strange & need further investigation, does not make sense. Specifically done to
-	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
-	return psConn->error ? erFAILURE : erSUCCESS ;
-#else
-	psConn->error = eCode;
 	if (psConn->d_eagain || eCode != EAGAIN) {
 		// to ensure that Syslog related errors does not get logged again, lift the level
 		int Level = psConn->d_ndebug ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
-		vSyslog(Level, pFname, "%s:%d err=%d (%s)",
-			psConn->pHost, ntohs(psConn->sa_in.sin_port), eCode, esp_err_to_name(eCode));
+		vSyslog(Level, pFname, "%s:%d err=%d (%s)", psConn->pHost, ntohs(psConn->sa_in.sin_port), eCode, pcMess);
 	}
+	if (fAlloc)
+		vRtosFree(pcMess);
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
 	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
 	return psConn->error ? erFAILURE : erSUCCESS ;
-#endif
 }
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
