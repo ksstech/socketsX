@@ -394,14 +394,14 @@ int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	if (mSecTime <= flagXNET_NONBLOCK)
 		return xNetSetNonBlocking(psConn, mSecTime);
-	psConn->tOut	= mSecTime ;
-	struct timeval timeVal ;
-	timeVal.tv_sec	= psConn->tOut / MILLIS_IN_SECOND ;
-	timeVal.tv_usec = (psConn->tOut * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND ;
+	psConn->tOut = mSecTime;
+	struct timeval timeVal;
+	timeVal.tv_sec	= mSecTime / MILLIS_IN_SECOND;
+	timeVal.tv_usec = (mSecTime * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND;
 	int iRV = setsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal));
 	if (iRV < 0)
 		return xNetGetError(psConn, __FUNCTION__, errno);
-	psConn->error	= 0 ;
+	psConn->error = 0 ;
 	if (psConn->d_timing) {
 		socklen_t SockOptLen ;
 		SockOptLen = sizeof(timeVal) ;
@@ -553,9 +553,10 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
 
 	/* Also need to consider adding a loop to repeat the accept()
 	 * in case of EAGAIN or POOL_IS_EMPTY errors */
-	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len) ;
-	if (iRV < 0)
-		return xNetGetError(psServCtx, __FUNCTION__, errno) ;
+	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
+	if (iRV < 0) {
+		return xNetGetError(psServCtx, __FUNCTION__, errno);
+	}
 	psServCtx->error = 0 ;
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
