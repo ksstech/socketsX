@@ -223,7 +223,7 @@ int xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 			psConn->pHost, psConn->sd, Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV",
 			Code, psConn->trynow, psConn->trymax, psConn->tOut, psConn->d_flags, psConn->flags, psConn->error) ;
 	if (psConn->d_data && pBuf && xLen)
-		printfx("%!'+B", xLen, pBuf);
+		printfx("%!`+B", xLen, pBuf);
 	return erSUCCESS ;
 }
 
