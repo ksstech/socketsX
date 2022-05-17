@@ -164,7 +164,7 @@ static int xNetMbedInit(netx_t * psConn) {
 	mbedtls_x509_crt_init(&psConn->psSec->cacert) ;
 	mbedtls_ssl_config_init(&psConn->psSec->conf) ;
 
-	i8_t random_key[xpfMAX_LEN_X64] ;
+	char random_key[xpfMAX_LEN_X64] ;
 	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime) ;
 	iRV = mbedtls_ctr_drbg_seed(&psConn->psSec->ctr_drbg, mbedtls_entropy_func, &psConn->psSec->entropy, (pcu8_t) random_key, iRV) ;
 	if (iRV != 0)
