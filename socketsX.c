@@ -136,7 +136,7 @@ static void vNetMbedDebug(void * ctx, int level, const char * file, int line, co
  * Certificate verification callback for mbed TLS
  * Here we only use it to display information on each cert in the chain
  */
-static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags) {
+static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *flags) {
 	(void) data;
 	printfx("xNetMbedVerify: Verifying certificate at depth %d:\n", depth);
 	pi8_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE) ;
@@ -363,7 +363,7 @@ static int xNetConnect(netx_t * psConn) {
  * @brief
  * @return
  */
-int xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
+int xNetSetNonBlocking(netx_t * psConn, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	psConn->tOut = mSecTime ;
 	int iRV = ioctl(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
@@ -377,7 +377,7 @@ int xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) {
 /*
  * xNetSetRecvTimeOut() -
  */
-int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
+int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	if (mSecTime <= flagXNET_NONBLOCK)
 		return xNetSetNonBlocking(psConn, mSecTime);
@@ -400,7 +400,7 @@ int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) {
 /*
  * xNetAdjustTimeout()
  */
-uint32_t xNetAdjustTimeout(netx_t * psConn, uint32_t mSecTime) {
+u32_t xNetAdjustTimeout(netx_t * psConn, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	psConn->trynow	= 0;
 	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
@@ -449,7 +449,7 @@ int	xNetSecurePostConnect(netx_t * psConn) {
 	mbedtls_ssl_conf_authmode(&psConn->psSec->conf, psConn->psSec->Verify
 			? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL) ;
 	if (psConn->psSec->Verify) {
-		uint32_t Result ;
+		u32_t Result ;
 		iRV = mbedtls_x509_crt_verify(&psConn->psSec->cacert, &psConn->psSec->cacert,
 			NULL, NULL, &Result, xNetMbedVerify, psConn) ;
 	}
@@ -527,7 +527,7 @@ int	xNetOpen(netx_t * psConn) {
  * @return			on success file descriptor of the socket (positive value)
  * 					on failure erFAILURE (-1) with error set...
  */
-int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) {
+int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psServCtx) && halCONFIG_inSRAM(psClntCtx));
 	// Set host/server RX timeout
 	int iRV = xNetSetRecvTimeOut(psServCtx, mSecTime) ;
@@ -619,7 +619,7 @@ int	xNetClose(netx_t * psConn) {
  * @return	on success, positive number 1 -> iRV -> xLen indicating number of bytes written
  * 			on failure, -1 with error set to the actual code
  */
-int	xNetWrite(netx_t * psConn, char * pBuf, int xLen) {
+int	xNetWrite(netx_t * psConn, u8_t * pBuf, int xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inMEM(pBuf) &&  xLen > 0);
 	int iRV ;
@@ -651,7 +651,7 @@ int	xNetWrite(netx_t * psConn, char * pBuf, int xLen) {
  * @return	on success, positive number 1 -> iRV -> xLen indicating number of bytes read
  * 			on failure,
  */
-int	xNetRead(netx_t * psConn, char * pBuf, int xLen) {
+int	xNetRead(netx_t * psConn, u8_t * pBuf, int xLen) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	int	iRV ;
 	if (psConn->psSec) {
@@ -685,7 +685,7 @@ int	xNetRead(netx_t * psConn, char * pBuf, int xLen) {
  * @param	mSecTime	number of milli-seconds to block
  * @return	number of bytes written (ie < erSUCCESS indicates error code)
  */
-int	xNetWriteBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) {
+int	xNetWriteBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
 	IF_myASSERT(debugPARAM, halCONFIG_inMEM(pBuf)) ;
 	IF_myASSERT(debugPARAM, xLen > 0) ;
@@ -718,7 +718,7 @@ int	xNetWriteBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) {
  * @param[in]	mSecTime = number of milli-seconds to block
  * @return	  number of bytes read (ie < erSUCCESS indicates error code)
  */
-int	xNetReadBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) {
+int	xNetReadBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	mSecTime = xNetAdjustTimeout(psConn, mSecTime) ;
 	xNetSetRecvTimeOut(psConn, mSecTime) ;
@@ -738,7 +738,7 @@ int	xNetReadBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) {
 
 // #################################################################################################
 
-int	xNetWriteFromBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
+int	xNetWriteFromBuf(netx_t * psConn, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
 	int	iRV = xNetWriteBlocks(psConn, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {
@@ -748,7 +748,7 @@ int	xNetWriteFromBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
 	return iRV ;
 }
 
-int	xNetReadToBuf(netx_t * psConn, ubuf_t * psBuf, uint32_t mSecTime) {
+int	xNetReadToBuf(netx_t * psConn, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
 	int iRV = xNetReadBlocks(psConn, psBuf->pBuf + psBuf->IdxWR, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {

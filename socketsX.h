@@ -142,21 +142,21 @@ void xNetRestartStack( void );
 EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks);
 int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) ;
 //int	xNetGetHost(netx_t * psConn) ;
-int	xNetSetNonBlocking(netx_t * psConn, uint32_t mSecTime) ;
-int	xNetSetRecvTimeOut(netx_t * psConn, uint32_t mSecTime) ;
+int	xNetSetNonBlocking(netx_t * psConn, u32_t mSecTime) ;
+int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) ;
 int	xNetSelect(netx_t * psConn, uint8_t Flag) ;
 int	xNetOpen(netx_t * psConn) ;
-int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, uint32_t mSecTime) ;
+int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) ;
 
 // read/write with traditional buffers
-int	xNetWrite(netx_t * psConn, char * pBuf, int xLen) ;
-int	xNetWriteBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) ;
-int	xNetRead(netx_t * psConn, char * pBuf, int xLen) ;
-int	xNetReadBlocks(netx_t * psConn, char * pBuf, int xLen, uint32_t mSecTime) ;
+int	xNetWrite(netx_t * psConn, u8_t * pBuf, int xLen) ;
+int	xNetWriteBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
+int	xNetRead(netx_t * psConn, u8_t * pBuf, int xLen) ;
+int	xNetReadBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
 
 // read/write using managed buffers
-int	xNetWriteFromBuf(netx_t *, ubuf_t *, uint32_t) ;
-int	xNetReadToBuf(netx_t *, ubuf_t *, uint32_t) ;
+int	xNetWriteFromBuf(netx_t *, ubuf_t *, u32_t) ;
+int	xNetReadToBuf(netx_t *, ubuf_t *, u32_t) ;
 
 int	xNetClose(netx_t * psConn) ;
 void xNetReportStats(void) ;
@@ -178,7 +178,7 @@ void xNetReportStats(void) ;
 		}
 	}
 		// In real life, we probably want to bail out when ret != 0
-			uint32_t flags ;
+			u32_t flags ;
 			if ((flags = mbedtls_ssl_get_verify_result(&psConn->psSec->ssl)) != erSUCCESS) {
 				char vrfy_buf[512];
 				mbedtls_x509_crt_verify_info( vrfy_buf, sizeof( vrfy_buf ), "  ! ", flags );
