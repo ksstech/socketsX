@@ -68,16 +68,20 @@
  *
  */
 EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks) {
+	#define xnetSTEP	10
+	#define xnetROUND	(xnetSTEP / 2)
 	EventBits_t CurBits;
-	xTicks = (xTicks < 100) ? 100 : (xTicks == portMAX_DELAY) ? portMAX_DELAY : (xTicks + 5) % 10;
+	xTicks = (xTicks < xnetSTEP) ? xnetSTEP :
+			(xTicks == portMAX_DELAY) ? portMAX_DELAY :
+			(xTicks + xnetROUND) % xnetSTEP;
 	do {
-		CurBits = xRtosWaitStatusANY(ReqBits, pdMS_TO_TICKS(10));
+		CurBits = xRtosWaitStatusANY(ReqBits, xnetSTEP);
 		if ((CurBits & flagLX_STA) == flagLX_STA)
 			return flagLX_STA;
 		if ((CurBits & flagLX_SAP) == flagLX_SAP)
 			return flagLX_SAP;
 		if (xTicks != portMAX_DELAY)
-			xTicks -= 10;
+			xTicks -= xnetSTEP;
 	} while (xTicks);
 	return CurBits;
 }
@@ -231,7 +235,8 @@ int xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 
 static int xNetGetHost(netx_t * psConn) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn));
-	vRtosWaitStatus(flagLX_STA);
+//	vRtosWaitStatus(flagLX_STA);
+	xNetWaitLx(flagLX_STA, portMAX_DELAY);
 	#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	struct addrinfo * psAI;
 	struct addrinfo sAI;
