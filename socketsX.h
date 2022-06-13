@@ -96,41 +96,41 @@ typedef struct sock_sec_t {
 
 typedef struct __attribute__((aligned(4))) netx_t {
 	union {
-		struct	sockaddr_storage ss;				// largest, ensure space for ANY type/size
-		struct	sockaddr_in sa_in;
-		struct	sockaddr sa;
-	} ;
-	const char *	pHost ;							// name of host to connect to
-	sock_sec_t *	psSec ;							// pointer to SSL/TLS config
-	int				error ;							// error code return by last operation..
-	int				flags ;							// Check implementation
-	size_t			maxTx ;
-	size_t			maxRx ;
-	int16_t			sd ;							// socket descriptor
-	uint16_t		tOut ;							// last timeout in mSec
-	uint8_t  		type ;							// STREAM/TCP, DGRAM/UDP or RAW/RAW
-	uint8_t			trymax ;						// max times to try read
-	uint8_t			trynow ;						// times tried
-	uint8_t			spare ;
+		struct sockaddr_storage ss;	// largest, ensure space for ANY type/size
+		struct sockaddr_in sa_in;
+		struct sockaddr sa;
+	};
+	const char * pHost;				// name of host to connect to
+	sock_sec_t * psSec;				// pointer to SSL/TLS config
+	int error;						// error code return by last operation..
+	int flags;						// Check implementation
+	size_t maxTx;
+	size_t maxRx;
+	s16_t sd;						// socket descriptor
+	u16_t tOut;						// last timeout in mSec
+	u8_t type;						// STREAM/TCP, DGRAM/UDP or RAW/RAW
+	u8_t trymax;					// max times to try read
+	u8_t trynow;					// times tried
+	u8_t spare;
 	union {
 		struct __attribute__((packed)) {
-			uint8_t		connect	: 1 ;				// connected
-			uint8_t		d_ndebug: 1 ;				// change syslog level in xNetGetError()
-			uint8_t		d_eagain: 1 ;				// show EAGAIN errors
-			uint8_t		d_open	: 1 ;				// debug control flags
-			uint8_t		d_timing: 1 ;
-			uint8_t		d_accept: 1 ;
-			uint8_t		d_select: 1 ;
-			uint8_t		d_write	: 1 ;
-			uint8_t		d_read	: 1 ;
-			uint8_t		d_data	: 1 ;
-			uint8_t		d_close	: 1 ;
-			uint8_t		d_secure: 1 ;				// Mbed TLS debug enable
-			uint8_t		d_level	: 4 ;				// Mbed TLS 1+ value to set max level
-		} ;
-		uint16_t	d_flags ;
+			u8_t connect:1;			// connected
+			u8_t d_ndebug:1;		// change syslog level in xNetGetError()
+			u8_t d_eagain:1;		// show EAGAIN errors
+			u8_t d_open:1;			// debug control flags
+			u8_t d_timing:1;
+			u8_t d_accept:1;
+			u8_t d_select:1;
+			u8_t d_write:1;
+			u8_t d_read:1;
+			u8_t d_data:1;
+			u8_t d_close:1;
+			u8_t d_secure:1;		// Mbed TLS debug enable
+			u8_t d_level:4;			// Mbed TLS 1+ value to set max level
+		};
+		u16_t d_flags;
 	};
-} netx_t ;
+} netx_t;
 //DUMB_STATIC_ASSERT( sizeof(netx_t) == 8) ;
 
 // ####################################### Global variables ########################################
@@ -144,7 +144,7 @@ int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int 
 //int	xNetGetHost(netx_t * psConn) ;
 int	xNetSetNonBlocking(netx_t * psConn, u32_t mSecTime) ;
 int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) ;
-int	xNetSelect(netx_t * psConn, uint8_t Flag) ;
+int	xNetSelect(netx_t * psConn, u8_t Flag) ;
 int	xNetOpen(netx_t * psConn) ;
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) ;
 
@@ -168,7 +168,7 @@ void xNetReportStats(void) ;
 /*
 	if( ( ret = mbedtls_net_connect( &server_fd, SERVER_NAME,
 										 SERVER_PORT, MBEDTLS_NET_PROTO_TCP ) ) != 0 ) {
-		mbedtls_printf( " failed\n  ! mbedtls_net_connect returned %d\n\n", ret );
+		mbedtls_printf( " failed\r\n  ! mbedtls_net_connect returned %d\r\n\n", ret );
 		goto exit;
 	}
 
@@ -182,7 +182,7 @@ void xNetReportStats(void) ;
 			if ((flags = mbedtls_ssl_get_verify_result(&psConn->psSec->ssl)) != erSUCCESS) {
 				char vrfy_buf[512];
 				mbedtls_x509_crt_verify_info( vrfy_buf, sizeof( vrfy_buf ), "  ! ", flags );
-				mbedtls_printf( "%s\n", vrfy_buf );
+				mbedtls_printf( "%s\r\n", vrfy_buf );
 			}
 		}
 */

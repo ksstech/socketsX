@@ -128,7 +128,7 @@ static void vNetMbedDebug(void * ctx, int level, const char * file, int line, co
 		printfx("L=%d  %s", level, str ) ;
 		if (level == 4)
 			printfx("  %d:%s", line, file) ;
-		printfx("\n") ;
+		printfx("\r\n") ;
 	}
 }
 
@@ -138,15 +138,15 @@ static void vNetMbedDebug(void * ctx, int level, const char * file, int line, co
  */
 static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *flags) {
 	(void) data;
-	printfx("xNetMbedVerify: Verifying certificate at depth %d:\n", depth);
+	printfx("xNetMbedVerify: Verifying certificate at depth %d:\r\n", depth);
 	pi8_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE) ;
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
 	printfx(pBuf);
 	if (*flags == 0) {
-		printfx("xNetMbedVerify: No verification issue for this certificate\n");
+		printfx("xNetMbedVerify: No verification issue for this certificate\r\n");
 	} else {
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
-		printfx("xNetMbedVerify: %s\n", pBuf);
+		printfx("xNetMbedVerify: %s\r\n", pBuf);
 	}
 	vRtosFree(pBuf) ;
 	return 0 ;
@@ -215,7 +215,7 @@ static void vNetMbedDeInit(netx_t * psConn) {
  * xNetReport()
  */
 int xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) {
-	printfx("%C%-s%C\t%s  %s://%-I:%d (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\n",
+	printfx("%C%-s%C\t%s  %s://%-I:%d (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\r\n",
 			colourFG_CYAN, pFname, attrRESET,
 			(psConn->sa_in.sin_family == AF_INET) ? "ip4" : (psConn->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psConn->type == SOCK_DGRAM) ? "udp" : (psConn->type == SOCK_STREAM) ? "tcp" : "raw",
@@ -258,13 +258,13 @@ static int xNetGetHost(netx_t * psConn) {
 	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
 	int iRV = erSUCCESS;
 	struct hostent * psHE = gethostbyname(psConn->pHost);
-//	P("Host=:%s  psHE=%p\n", psConn->pHost, psHE);
-//	IF_P(psHE, "Name=%s\n", psHE->h_name);
-//	IF_P(psHE, "Type=%d\n", psHE->h_addrtype);
-//	IF_P(psHE, "Len=%d\n", psHE->h_length);
-//	IF_P(psHE, "List=%p\n", psHE->h_addr_list);
-//	IF_P(psHE && psHE->h_addr_list, "List[0]=%p\n", psHE->h_addr_list[0]);
-//	IF_P(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I\n", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
+//	P("Host=:%s  psHE=%p\r\n", psConn->pHost, psHE);
+//	IF_P(psHE, "Name=%s\r\n", psHE->h_name);
+//	IF_P(psHE, "Type=%d\r\n", psHE->h_addrtype);
+//	IF_P(psHE, "Len=%d\r\n", psHE->h_length);
+//	IF_P(psHE, "List=%p\r\n", psHE->h_addr_list);
+//	IF_P(psHE && psHE->h_addr_list, "List[0]=%p\r\n", psHE->h_addr_list[0]);
+//	IF_P(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I\r\n", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
 	if ((psHE == NULL) || (psHE->h_addrtype != AF_INET) ||
 		(psHE->h_addr_list == NULL) || (psHE->h_addr_list[0] == NULL)) {
 		iRV = xNetGetError(psConn, __FUNCTION__, h_errno);
@@ -289,7 +289,7 @@ static int xNetGetHost(netx_t * psConn) {
 		hstbuflen *= 2;
 		tmphstbuf = realloc (tmphstbuf, hstbuflen);
 	}
-	P("Host=:%s psHE=%p Size=%d iRV=%d res=%d\n", psConn->pHost, psHE, hstbuflen, iRV, psAI);
+	P("Host=:%s psHE=%p Size=%d iRV=%d res=%d\r\n", psConn->pHost, psHE, hstbuflen, iRV, psAI);
 	/*  Check for errors.  */
 	if (psAI || psHE == NULL) {
 		iRV = xNetGetError(psConn, __FUNCTION__, psAI) ;
@@ -298,7 +298,7 @@ static int xNetGetHost(netx_t * psConn) {
 				psHE->h_name, psHE->h_addrtype, psHE->h_length, psHE->h_addr_list);
 		IF_P(psHE && psHE->h_addr_list, "  List[0]=%p", psHE->h_addr_list[0]);
 		IF_P(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "  Addr[0]=%-#I", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
-		P("\n");
+		P("\r\n");
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
 		psConn->sa_in.sin_addr.s_addr = psIA->s_addr;
 		if (debugOPEN || psConn->d_open)
@@ -309,7 +309,7 @@ static int xNetGetHost(netx_t * psConn) {
 	#elif (OPT_RESOLVE == 4)			// netconn_gethostbyname_addrtype()
 	ip_addr_t addr;
 	int iRV = netconn_gethostbyname_addrtype(psConn->pHost, &addr, AF_INET);
-	TRACK("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d\n", psConn->pHost, iRV, addr.type,
+	TRACK("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d\r\n", psConn->pHost, iRV, addr.type,
 		sizeof(struct sockaddr_storage), sizeof(struct sockaddr), sizeof(struct sockaddr_in));
 	if (iRV == ERR_OK) {
 		struct sockaddr_in * psSAI = &psConn->sa_in;
@@ -392,7 +392,7 @@ int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) {
 		socklen_t SockOptLen ;
 		SockOptLen = sizeof(timeVal) ;
 		getsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen) ;
-		RP("tOut=%d mSec\n", (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC)) ;
+		RP("tOut=%d mSec\r\n", (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC)) ;
 	}
 	return iRV ;
 }
@@ -465,8 +465,6 @@ int	xNetSecurePostConnect(netx_t * psConn) {
 /*
  * @brief	open a UDP/TCP socket based on specific parameters
  * @param   psConn = pointer to connection context
- * @param	pHostanme = pointer to the host URL to connect to
- * @param	psSec = pointer to the SSL/TLS security parameters
  * @return	status of last socket operation (ie < erSUCCESS indicates error code)
  */
 int	xNetOpen(netx_t * psConn) {
@@ -564,7 +562,8 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 int	xNetSelect(netx_t * psConn, uint8_t Flag) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn) && Flag < selFLAG_NUM) ;
 	// If the timeout is too short dont select() just simulate 1 socket ready...
-	if (psConn->tOut <= configXNET_MIN_TIMEOUT) return 1;
+	if (psConn->tOut <= configXNET_MIN_TIMEOUT)
+		return 1;
 	// Need to add code here to accommodate LwIP & OpenSSL for ESP32
 	fd_set	fdsSet ;
 	FD_ZERO(&fdsSet) ;
@@ -612,7 +611,7 @@ int	xNetClose(netx_t * psConn) {
 // #################################################################################################
 
 /**
- * xNetWrite() -
+ * @brief	Write data to host based on connection context
  * @param	psConn
  * @param	pBuf
  * @param	xLen
@@ -767,24 +766,24 @@ void xNetReportStats(void) {
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
-	    	printfx("sock: %d -- addr: %I, port: %d\n", sock, addr.sin_addr.s_addr, addr.sin_port) ;
+	    	printfx("sock: %d -- addr: %I, port: %d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port) ;
 	}
 	printfx(
-#if		(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
+		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
-			"  Dynamic Rx="		mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) "\n"
-#elif	(CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
+			"  Dynamic Rx="		mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) "\r\n"
+		#elif (CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
 			"Wifi: Dynamic Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM)
 			"  Rx="				mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM)
-			"  Static Rx="  	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) "\n"
-#endif
+			"  Static Rx="  	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) "\r\n"
+		#endif
 			"LWIP: MaxSock="	mySTRINGIFY(CONFIG_LWIP_MAX_SOCKETS)
-			"  RcvMboxSize="	mySTRINGIFY(CONFIG_TCPIP_RECVMBOX_SIZE) "\n"
+			"  RcvMboxSize="	mySTRINGIFY(CONFIG_TCPIP_RECVMBOX_SIZE) "\r\n"
 			"TCP: Max Act="		mySTRINGIFY(CONFIG_LWIP_MAX_ACTIVE_TCP)
-			"  Listen="			mySTRINGIFY(CONFIG_LWIP_MAX_LISTENING_TCP) "\n"
+			"  Listen="			mySTRINGIFY(CONFIG_LWIP_MAX_LISTENING_TCP) "\r\n"
 			"UDP: Max PCBs="	mySTRINGIFY(CONFIG_LWIP_MAX_UDP_PCBS)
-			"  RxMboxSize=" 	mySTRINGIFY(CONFIG_UDP_RECVMBOX_SIZE) "\n") ;
+			"  RxMboxSize=" 	mySTRINGIFY(CONFIG_UDP_RECVMBOX_SIZE) "\r\n") ;
 	void dbg_lwip_tcp_pcb_show(void) ; dbg_lwip_tcp_pcb_show() ;
 	void dbg_lwip_udp_pcb_show(void) ; dbg_lwip_udp_pcb_show() ;
 	void dbg_lwip_stats_show(void) ; dbg_lwip_stats_show() ;
