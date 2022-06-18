@@ -183,26 +183,25 @@ static int xNetMbedInit(netx_t * psConn) {
 	}
 #endif
 	if (iRV != 0)
-		return xNetGetError(psConn, "mbedtls_x509_crt_parse", iRV) ;
-	iRV = mbedtls_ssl_setup( &psConn->psSec->ssl, &psConn->psSec->conf) ;
-	if (iRV != 0)
-		return xNetGetError(psConn, "mbedtls_ssl_setup", iRV) ;
+		return xNetGetError(psConn, "mbedtls_x509_crt_parse", iRV);
 	iRV = mbedtls_ssl_config_defaults(&psConn->psSec->conf,
 			(psConn->pHost == 0)			? MBEDTLS_SSL_IS_SERVER			: MBEDTLS_SSL_IS_CLIENT,
 			(psConn->type == SOCK_STREAM)	? MBEDTLS_SSL_TRANSPORT_STREAM	: MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-			MBEDTLS_SSL_PRESET_DEFAULT) ;
+			MBEDTLS_SSL_PRESET_DEFAULT);
 	if (iRV != 0)
-		return xNetGetError(psConn, "mbedtls_ssl_config_defaults", iRV) ;
-	mbedtls_ssl_conf_ca_chain(&psConn->psSec->conf, &psConn->psSec->cacert, NULL) ;
+		return xNetGetError(psConn, "mbedtls_ssl_config_defaults", iRV);
+	iRV = mbedtls_ssl_setup( &psConn->psSec->ssl, &psConn->psSec->conf);
+	if (iRV != 0)
+		return xNetGetError(psConn, "mbedtls_ssl_setup", iRV);
+	mbedtls_ssl_conf_ca_chain(&psConn->psSec->conf, &psConn->psSec->cacert, NULL);
 	mbedtls_ssl_conf_rng( &psConn->psSec->conf, mbedtls_ctr_drbg_random, &psConn->psSec->ctr_drbg );
 
-#if	(CONFIG_MBEDTLS_DEBUG > 0)
+	#if	(CONFIG_MBEDTLS_DEBUG > 0)
 	if (psConn->d_secure) {
-		mbedtls_debug_set_threshold(CONFIG_MBEDTLS_DEBUG_LEVEL) ;
-		mbedtls_ssl_conf_dbg(&psConn->psSec->conf, vNetMbedDebug, psConn) ;
-//		esp_log_level_set("", CONFIG_MBEDTLS_DEBUG_LEVEL) ;
+		mbedtls_debug_set_threshold(psConn->d_level + 1);
+		mbedtls_ssl_conf_dbg(&psConn->psSec->conf, vNetMbedDebug, psConn);
 	}
-#endif
+	#endif
  	return iRV ;
 }
 
