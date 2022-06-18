@@ -126,7 +126,7 @@ typedef struct __attribute__((aligned(4))) netx_t {
 			u8_t d_data:1;
 			u8_t d_close:1;
 			u8_t d_secure:1;		// Mbed TLS debug enable
-			u8_t d_level:4;			// Mbed TLS 1+ value to set max level
+			u8_t d_level:2;			// Mbed TLS 1=0, 2=1, 3-2, 4=3 (0=no debug not allowed)
 		};
 		u16_t d_flags;
 	};
