@@ -91,7 +91,7 @@ typedef struct sock_sec_t {
 	mbedtls_x509_crt			cacert ;
 	const char *				pcCert ;
 	size_t						szCert ;
-	int8_t						Verify ;
+	s8_t						Verify ;
 } sock_sec_t ;
 
 typedef struct __attribute__((aligned(4))) netx_t {
