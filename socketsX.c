@@ -124,13 +124,19 @@ static int xNetGetError(netx_t * psConn, const char * pFname, int eCode) {
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 static void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
-	netx_t * psCtx = ctx ;
-	if (psCtx->d_secure && psCtx->d_level >= level) {
-		printfx("L=%d  %s", level, str ) ;
+#if 1
+	printfx("L=%d  %s", level, str );
+	if (level == 4)
+		printfx("  %d:%s", line, file);
+	printfx("\r\n");
+#else
+	if (level <= psCtx->d_level) {
+		printfx("L=%d  %s", level, str );
 		if (level == 4)
-			printfx("  %d:%s", line, file) ;
-		printfx("\r\n") ;
+			printfx("  %d:%s", line, file);
+		printfx("\r\n");
 	}
+#endif
 }
 
 /**
