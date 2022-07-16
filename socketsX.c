@@ -146,7 +146,7 @@ static void vNetMbedDebug(void * ctx, int level, const char * file, int line, co
 static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *flags) {
 	(void) data;
 	printfx("xNetMbedVerify: Verifying certificate at depth %d:\r\n", depth);
-	pi8_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE) ;
+	pc_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE) ;
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
 	printfx(pBuf);
 	if (*flags == 0) {
@@ -173,16 +173,16 @@ static int xNetMbedInit(netx_t * psConn) {
 
 	char random_key[xpfMAX_LEN_X64] ;
 	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime) ;
-	iRV = mbedtls_ctr_drbg_seed(&psConn->psSec->ctr_drbg, mbedtls_entropy_func, &psConn->psSec->entropy, (pcu8_t) random_key, iRV) ;
+	iRV = mbedtls_ctr_drbg_seed(&psConn->psSec->ctr_drbg, mbedtls_entropy_func, &psConn->psSec->entropy, (pcuc_t) random_key, iRV) ;
 	if (iRV != 0)
 		return xNetGetError(psConn, "mbedtls_ctr_drbg_seed", iRV) ;
 #if 1
-	iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcu8_t) psConn->psSec->pcCert, psConn->psSec->szCert) ;
+	iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcuc_t) psConn->psSec->pcCert, psConn->psSec->szCert) ;
 #else
 	if (psConn->psSec->pcCert) {			// use provided certificate
 		iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, psConn->psSec->pcCert, psConn->psSec->szCert) ;
 	} else {							// use default certificate list
-		iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcu8_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len) ;
+		iRV = mbedtls_x509_crt_parse(&psConn->psSec->cacert, (pcuc_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len) ;
 	}
 #endif
 	if (iRV != 0)
