@@ -22,46 +22,47 @@ extern "C" {
 
 // #################################### BUILD configuration ########################################
 
-#define		configXNET_MAX_RETRIES			200				// 250
-#define		configXNET_MIN_TIMEOUT			20
-#define		configXNET_MAX_TIMEOUT			30000			// mSec
+#define	configXNET_MAX_RETRIES		200					// 250
+#define	configXNET_MIN_TIMEOUT		20
+#define	configXNET_MAX_TIMEOUT		30000				// mSec
 
-#define		flagXNET_NONE					0
-#define		flagXNET_BLOCKING				0UL
-#define		flagXNET_NONBLOCK				1UL
+#define	flagXNET_NONE				0
+#define	flagXNET_BLOCKING			0UL
+#define	flagXNET_NONBLOCK			1UL
 
 // ######################################## IP well known ports ####################################
 
-#define		IP_PORT_ICMPECHO				7				// TCP/UDP
-#define 	IP_PORT_FTPDATA					20				// TCP/UDP
-#define 	IP_PORT_FTPCNTL					21				// TCP
-#define 	IP_PORT_SSH						22				// TCP/UDP
-#define 	IP_PORT_TELNET					23				// TCP/UDP
-#define		IP_PORT_TFTP					69				// UDP Trivial File Transfer Protocol
-#define		IP_PORT_HTTP					80				// TCP
+#define	IP_PORT_ICMPECHO			7					// TCP/UDP
+#define IP_PORT_FTPDATA				20					// TCP/UDP
+#define IP_PORT_FTPCNTL				21					// TCP
+#define IP_PORT_SSH					22					// TCP/UDP
+#define IP_PORT_TELNET				23					// TCP/UDP
+#define	IP_PORT_TFTP				69					// UDP Trivial File Transfer Protocol
+#define	IP_PORT_HTTP				80					// TCP
 
-#define		IP_PORT_POP2					109				// TCP
-#define		IP_PORT_POP3					110				// TCP
+#define	IP_PORT_POP2				109					// TCP
+#define	IP_PORT_POP3				110					// TCP
 
-#define		IP_PORT_NNTP					119				// TCP
-#define		IP_PORT_NTP						123				// UDP
+#define	IP_PORT_NNTP				119					// TCP
+#define	IP_PORT_NTP					123					// UDP
 
-#define		IP_PORT_IMAP					143				// TCP
-#define		IP_PORT_SNMP					161				// UDP
-#define		IP_PORT_SNMPTRAP				162				// TCP/UDP
+#define	IP_PORT_IMAP				143					// TCP
 
-#define		IP_PORT_HTTPS					443				// TCP
+#define	IP_PORT_SNMP				161					// UDP
+#define	IP_PORT_SNMPTRAP			162					// TCP/UDP
 
+#define	IP_PORT_HTTPS				443					// HTTPS (TCP)
+#define	IP_PORT_MODBUS				502					// Modbus (TCP)
 // Syslog support
-#define		IP_PORT_SYSLOG_UDP				514				// syslog		514/UDP
-#define		IP_PORT_SYSLOG_TCP				601				// syslog-conn	601/TCP -or- 601/UDP
-#define		IP_PORT_SYSLOG_TLS				6514			// syslog-tls	6514/TCP
+#define	IP_PORT_SYSLOG_UDP			514					// syslog		514/UDP
+#define	IP_PORT_SYSLOG_TCP			601					// syslog-conn	601/TCP -or- 601/UDP
+#define	IP_PORT_SYSLOG_TLS			6514				// syslog-tls	6514/TCP
 // CoAP support
-#define		IP_PORT_COAP 					5683			// UDP Insecure datagram port
-#define		IP_PORT_COAPS					5684			// UDP/DTLS Secure Datagram port
+#define	IP_PORT_COAP 				5683				// UDP Insecure datagram port
+#define	IP_PORT_COAPS				5684				// UDP/DTLS Secure Datagram port
 // MQTT support
-#define		IP_PORT_MQTT 					1883			// TCP Insecure stream port
-#define		IP_PORT_MQTTS					8883			// TCP/TLS Secure stream port
+#define	IP_PORT_MQTT 				1883				// TCP Insecure stream port
+#define	IP_PORT_MQTTS				8883				// TCP/TLS Secure stream port
 
 // ########################################### enumerations ########################################
 
@@ -96,7 +97,7 @@ typedef struct sock_sec_t {
 
 typedef struct __attribute__((aligned(4))) netx_t {
 	union {
-		struct sockaddr_storage ss;	// largest, ensure space for ANY type/size
+//		struct sockaddr_storage ss;	// largest, ensure space for ANY type/size
 		struct sockaddr_in sa_in;
 		struct sockaddr sa;
 	};
@@ -104,8 +105,7 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	sock_sec_t * psSec;				// pointer to SSL/TLS config
 	int error;						// error code return by last operation..
 	int flags;						// Check implementation
-	size_t maxTx;
-	size_t maxRx;
+	size_t maxTx, maxRx;
 	s16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
 	u8_t type;						// STREAM/TCP, DGRAM/UDP or RAW/RAW
@@ -131,7 +131,7 @@ typedef struct __attribute__((aligned(4))) netx_t {
 		u16_t d_flags;
 	};
 } netx_t;
-//DUMB_STATIC_ASSERT( sizeof(netx_t) == 8) ;
+DUMB_STATIC_ASSERT( sizeof(netx_t) == (36 + sizeof(struct sockaddr_in)));
 
 // ####################################### Global variables ########################################
 
