@@ -201,17 +201,24 @@ static void vNetMbedDeInit(netx_t * psC) {
 /*
  * xNetReport()
  */
-int xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) {
-	printfx("%C%-s%C\t%s  %s://%-I:%d (%s)  sd=%d  %s=%d  Try=%d/%d  tOut=%d  mode=0x%02x  flag=0x%x  error=%d\r\n",
+#if (debugTRACK)
+int xNetReport(netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
+	printfx_lock();
+	printfx_nolock("%C%-s%C\t%s  %s://%-I:%d ",
 			colourFG_CYAN, pFname, attrRESET,
-			(psConn->sa_in.sin_family == AF_INET) ? "ip4" : (psConn->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
-			(psConn->type == SOCK_DGRAM) ? "udp" : (psConn->type == SOCK_STREAM) ? "tcp" : "raw",
-			ntohl(psConn->sa_in.sin_addr.s_addr), ntohs(psConn->sa_in.sin_port),
-			psConn->pHost, psConn->sd, Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV",
-			Code, psConn->trynow, psConn->trymax, psConn->tOut, psConn->d_flags, psConn->flags, psConn->error) ;
-	if (psConn->d_data && pBuf && xLen)
-		printfx("%!`+B", xLen, pBuf);
-	return erSUCCESS ;
+			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
+			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
+			ntohl(psC->sa_in.sin_addr.s_addr), ntohs(psC->sa_in.sin_port));
+	printfx_nolock("(%s)  sd=%d  %s=%d  Try=%d/%d  ",
+			psC->pHost, psC->sd, Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV",
+			Code, psC->trynow, psC->trymax);
+	printfx_nolock("TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
+			psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
+			psC->d_flags, psC->flags, psC->error);
+	if (psC->d_data && pBuf && xLen)
+		printfx_nolock("%!`+B", xLen, pBuf);
+	printfx_unlock();
+	return erSUCCESS;
 }
 
 #define OPT_RESOLVE					1
