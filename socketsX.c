@@ -220,6 +220,7 @@ int xNetReport(netx_t * psC, const char * pFname, int Code, void * pBuf, int xLe
 	printfx_unlock();
 	return erSUCCESS;
 }
+#endif
 
 #define OPT_RESOLVE					1
 
@@ -334,9 +335,7 @@ static int xNetSocket(netx_t * psC)  {
 	return iRV;
 }
 
-#if	(netxBUILD_SPC == 1)
-static int xNetSecurePreConnect(netx_t * psConn) {	return 0; }
-#endif
+int xNetSecurePreConnect(netx_t * psC) { return 0; }
 
 /**
  * @brief
