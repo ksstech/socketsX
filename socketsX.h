@@ -26,7 +26,6 @@ extern "C" {
 #define	configXNET_MIN_TIMEOUT		20
 #define	configXNET_MAX_TIMEOUT		30000				// mSec
 
-#define	flagXNET_NONE				0
 #define	flagXNET_BLOCKING			0UL
 #define	flagXNET_NONBLOCK			1UL
 
@@ -115,9 +114,12 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	union {
 		struct __attribute__((packed)) {
 			u8_t connect:1;			// connected
+			// debug control flags
 			u8_t d_ndebug:1;		// change syslog level in xNetGetError()
 			u8_t d_eagain:1;		// show EAGAIN errors
-			u8_t d_open:1;			// debug control flags
+			u8_t d_open:1;			// open & socket
+			u8_t d_host:1;			// gethost & connect
+			u8_t d_bANDl:1;			// bind & listen
 			u8_t d_timing:1;
 			u8_t d_accept:1;
 			u8_t d_select:1;
@@ -141,9 +143,7 @@ DUMB_STATIC_ASSERT( sizeof(netx_t) == (36 + sizeof(struct sockaddr_in)));
 void xNetRestartStack( void );
 EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks);
 int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) ;
-//int	xNetGetHost(netx_t * psConn) ;
-int	xNetSetNonBlocking(netx_t * psConn, u32_t mSecTime) ;
-int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) ;
+int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime) ;
 int	xNetSelect(netx_t * psConn, u8_t Flag) ;
 int	xNetOpen(netx_t * psConn) ;
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) ;

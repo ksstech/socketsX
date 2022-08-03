@@ -341,60 +341,57 @@ int xNetSecurePreConnect(netx_t * psC) { return 0; }
  * @brief
  * @return	0 if successful, -1 with error level set if not...
  */
-static int xNetConnect(netx_t * psConn) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-  	int iRV = connect(psConn->sd, &psConn->sa, sizeof(struct sockaddr_in)) ;
+static int xNetConnect(netx_t * psC) {
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
+  	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
   	if (iRV != 0)
-  		return xNetGetError(psConn, __FUNCTION__, errno) ;
-	psConn->connect = 1 ;
-	if (debugOPEN || psConn->d_open)
-		xNetReport(psConn, __FUNCTION__, iRV, 0, 0) ;
-	return iRV ;
-}
-
-/*
- * @brief
- * @return
- */
-int xNetSetNonBlocking(netx_t * psConn, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-	psConn->tOut = mSecTime ;
-	int iRV = ioctl(psConn->sd, FIONBIO, &mSecTime) ;		// 0 = Disable, 1+ = Enable NonBlocking
-	if (iRV != 0)
-		return xNetGetError(psConn, __FUNCTION__, iRV) ;
-	if (psConn->d_timing)
-		SL_INFO("%d = %sBLOCKING", mSecTime, (mSecTime == 0) ? "" : "NON-") ;
+  		return xNetGetError(psC, __FUNCTION__, errno);
+	psC->connect = 1;
+	if (debugTRACK && psC->d_host)
+		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
 /*
- * xNetSetRecvTimeOut() -
+ * @brief	Configure a socket to be non-blocking or with a specific timeout
+ * @param	Socket context to use
+ * @param	Timeout to be configured
+ * @return	Actual period configured
  */
-int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psConn)) ;
-	if (mSecTime <= flagXNET_NONBLOCK)
-		return xNetSetNonBlocking(psConn, mSecTime);
-	psConn->tOut = mSecTime;
-	struct timeval timeVal;
-	timeVal.tv_sec	= mSecTime / MILLIS_IN_SECOND;
-	timeVal.tv_usec = (mSecTime * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND;
-	int iRV = setsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal));
-	if (iRV < 0)
-		return xNetGetError(psConn, __FUNCTION__, errno);
-	if (psConn->d_timing) {
-		socklen_t SockOptLen ;
-		SockOptLen = sizeof(timeVal) ;
-		getsockopt(psConn->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen) ;
-		RP("tOut=%d mSec\r\n", (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC)) ;
+int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
+	psC->tOut = mSecTime;
+	int iRV;
+	if (mSecTime <= flagXNET_NONBLOCK) {
+		iRV = ioctl(psC->sd, FIONBIO, &mSecTime);		// 0 = Disable, 1+ = Enable NonBlocking
+	} else {
+		struct timeval timeVal;
+		timeVal.tv_sec	= mSecTime / MILLIS_IN_SECOND;
+		timeVal.tv_usec = (mSecTime * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND;
+		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal));
+		/*if (debugTRACK && psC->d_timing) {
+			socklen_t SockOptLen ;
+			SockOptLen = sizeof(timeVal);
+			getsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen);
+			u32_t tOut = (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC);
+			myASSERT(tOut == mSecTime);
+		}*/
 	}
-	return iRV ;
+	if (iRV != 0)
+		return xNetGetError(psC, __FUNCTION__, iRV);
+	if (debugTRACK && psC->d_timing)
+		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
+	return iRV;
 }
 
 /*
  * @brief	Used when reading/writing blocks/buffers to adjust the overall timeout specified
+ * @param	Socket context to use
  * @param	Timeout (total) to be configured into multiple retries of a smaller periods
  * @return	Actual period configured
  */
+u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
 	psC->trynow	= 0;
 	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
 	if (mSecTime <= flagXNET_NONBLOCK) {
@@ -521,7 +518,7 @@ int	xNetOpen(netx_t * psC) {
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psServCtx) && halCONFIG_inSRAM(psClntCtx));
 	// Set host/server RX timeout
-	int iRV = xNetSetRecvTimeOut(psServCtx, mSecTime) ;
+	int iRV = xNetSetRecvTO(psServCtx, mSecTime);
 	if (iRV < 0)
 		return iRV;
 	memset(psClntCtx, 0, sizeof(netx_t)) ;		// clear the client context
@@ -705,10 +702,10 @@ int	xNetWriteBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
  * @param[in]	mSecTime = number of milli-seconds to block
  * @return	  number of bytes read (ie < erSUCCESS indicates error code)
  */
-	xNetSetRecvTimeOut(psConn, mSecTime) ;
 int	xNetReadBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	mSecTime = xNetAdjustTimeout(psC, mSecTime) ;
+	xNetSetRecvTO(psC, mSecTime) ;
 	int	iRV, xLenDone = 0 ;
 	do {
 		iRV = xNetRead(psC, pBuf + xLenDone, xLen - xLenDone) ;
