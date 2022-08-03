@@ -392,7 +392,8 @@ int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) {
 	psC->trynow	= 0;
 	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
 	if (mSecTime <= flagXNET_NONBLOCK) {
- 		psConn->tOut = mSecTime;
+		psC->trymax	= 1 ;
+ 		psC->tOut = mSecTime;
 		return mSecTime ;
 	}
 	// adjust the lower limit.
@@ -401,12 +402,12 @@ int	xNetSetRecvTimeOut(netx_t * psConn, u32_t mSecTime) {
 	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES)
 		psC->trymax = configXNET_MAX_RETRIES ;
 	else
-		psConn->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT ;
+		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT ;
 
-	psConn->tOut = (psConn->trymax > 0) ? (mSecTime / psConn->trymax) : mSecTime ;
-	if (psConn->d_timing)
-		xNetReport(psConn, __FUNCTION__, mSecTime, 0, 0) ;
-	return 	psConn->tOut ;
+	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
+	if (debugTRACK && psC->d_timing)
+		xNetReport(psC, __FUNCTION__, mSecTime, 0, 0);
+	return 	psC->tOut;
 }
 
 int	xNetBindListen(netx_t * psC) {
