@@ -293,7 +293,7 @@ static int xNetGetHost(netx_t * psC) {
 				psHE->h_name, psHE->h_addrtype, psHE->h_length, psHE->h_addr_list);
 		IF_P(psHE && psHE->h_addr_list, "  List[0]=%p", psHE->h_addr_list[0]);
 		IF_P(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "  Addr[0]=%-#I", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
-		P("\r\n");
+		P(strCRLF);
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
 		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
 		if (debugTRACK && psC->d_host)
@@ -757,18 +757,18 @@ void xNetReportStats(void) {
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
-			"  Dynamic Rx="		mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) "\r\n"
+			"  Dynamic Rx="		mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) strCRLF
 		#elif (CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
 			"Wifi: Dynamic Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM)
 			"  Rx="				mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM)
-			"  Static Rx="  	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) "\r\n"
+			"  Static Rx="  	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) strCRLF
 		#endif
 			"LWIP: MaxSock="	mySTRINGIFY(CONFIG_LWIP_MAX_SOCKETS)
-			"  RcvMboxSize="	mySTRINGIFY(CONFIG_TCPIP_RECVMBOX_SIZE) "\r\n"
+			"  RcvMboxSize="	mySTRINGIFY(CONFIG_TCPIP_RECVMBOX_SIZE) strCRLF
 			"TCP: Max Act="		mySTRINGIFY(CONFIG_LWIP_MAX_ACTIVE_TCP)
-			"  Listen="			mySTRINGIFY(CONFIG_LWIP_MAX_LISTENING_TCP) "\r\n"
+			"  Listen="			mySTRINGIFY(CONFIG_LWIP_MAX_LISTENING_TCP) strCRLF
 			"UDP: Max PCBs="	mySTRINGIFY(CONFIG_LWIP_MAX_UDP_PCBS)
-			"  RxMboxSize=" 	mySTRINGIFY(CONFIG_UDP_RECVMBOX_SIZE) "\r\n") ;
+			"  RxMboxSize=" 	mySTRINGIFY(CONFIG_UDP_RECVMBOX_SIZE) strCRLF) ;
 	void dbg_lwip_tcp_pcb_show(void) ; dbg_lwip_tcp_pcb_show() ;
 	void dbg_lwip_udp_pcb_show(void) ; dbg_lwip_udp_pcb_show() ;
 	void dbg_lwip_stats_show(void) ; dbg_lwip_stats_show() ;
