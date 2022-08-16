@@ -216,7 +216,7 @@ int xNetReport(netx_t * psC, const char * pFname, int Code, void * pBuf, int xLe
 			psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d_flags, psC->flags, psC->error);
 	if (psC->d_data && pBuf && xLen)
-		printfx_nolock("%!`+B", xLen, pBuf);
+		printfx_nolock("%!`+B\r\n", xLen, pBuf);
 	printfx_unlock();
 	return erSUCCESS;
 }
