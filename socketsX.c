@@ -751,7 +751,7 @@ void xNetReportStats(void) {
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
-	    	printfx("sock: %d -- addr: %I, port: %d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port) ;
+	    	printfx("sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port) ;
 	}
 	printfx(
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
