@@ -122,7 +122,6 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	};
 	union netx_dbg_u {				// debug control flags
 		struct __attribute__((packed)) {
-			u8_t connect:1;			// connected
 			u8_t o:1;				// open & socket
 			u8_t h:1;				// gethost & connect
 			u8_t bl:1;				// bind & listen

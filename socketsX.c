@@ -615,7 +615,7 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	if (psC->psSec) {
 		iRV = mbedtls_ssl_write(&psC->psSec->ssl, (unsigned char *) pBuf, xLen) ;
 	} else {
-		if (psC->connect) {
+		if (psC->pHost) {
 			iRV = send(psC->sd, pBuf, xLen, psC->flags) ;
 		} else {
 			iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in)) ;
@@ -644,9 +644,9 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	if (psC->psSec) {
 		iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen) ;
 	} else {
-		if (psC->connect) {						// TCP read from socket (connection oriented)
+		if (psC->pHost) {
 			iRV = recv(psC->sd, pBuf, xLen, psC->flags) ;
-		} else {									// UDP read from socket (connection-less)
+		} else {										// UDP (connection-less) read
 			socklen_t i16AddrSize = sizeof(struct sockaddr_in) ;
 			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize) ;
 		}
