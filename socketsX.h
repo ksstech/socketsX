@@ -114,11 +114,14 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	size_t maxTx, maxRx;
 	s16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
-	u8_t type;						// STREAM/TCP, DGRAM/UDP or RAW/RAW
-	u8_t trymax;					// max times to try read
-	u8_t trynow;					// times tried
-	u8_t spare;
 	union {
+	struct __attribute__((packed)) {
+		u8_t trymax;				// max times to try read
+		u8_t trynow;				// times tried
+		u8_t spare;
+		u8_t type:3;				// valid 1->5, STREAM/TCP, DGRAM/UDP or RAW/RAW
+		u8_t uu:5;
+	};
 		struct __attribute__((packed)) {
 			u8_t connect:1;			// connected
 			// debug control flags
