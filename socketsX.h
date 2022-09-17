@@ -4,17 +4,24 @@
 
 #pragma once
 
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <netdb.h>
-
 #include "esp_netif.h"
 
-#include "x_ubuf.h"				// FreeRTOS_Support
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
 
+#include "mbedtls/platform.h"
 #include "mbedtls/net_sockets.h"
+#include "mbedtls/esp_debug.h"
+#include "mbedtls/ssl.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
+#include "mbedtls/error.h"
+#include "esp_crt_bundle.h"
+
+#include "x_ubuf.h"				// FreeRTOS_Support
 
 #ifdef __cplusplus
 extern "C" {

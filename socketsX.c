@@ -3,17 +3,18 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include	"hal_variables.h"
-#include	"socketsX.h"
-#include	"printfx.h"									// +x_definitions +stdarg +stdint +stdio
-#include	"syslog.h"
-#include	"systiming.h"
-#include	"x_errors_events.h"
+#include "hal_variables.h"
+#include "socketsX.h"
+#include "printfx.h"									// +x_definitions +stdarg +stdint +stdio
+#include "syslog.h"
+#include "systiming.h"
+#include "x_errors_events.h"
 
-#include	"mbedtls/error.h"
+#include <errno.h>
+#include "mbedtls/error.h"
 
 #ifdef	CONFIG_MBEDTLS_DEBUG
-	#include	"mbedtls/debug.h"
+	#include "mbedtls/debug.h"
 #endif
 
 // ############################### BUILD: debug configuration options ##############################
