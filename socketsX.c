@@ -109,6 +109,8 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	}
 	if (fAlloc)
 		vRtosFree(pcMess);
+	// Under certain conditions we can close the socket automatically
+//	if (psC->error == ENOTCONN) xNetClose(psC);
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
 	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
 	return psC->error ? erFAILURE : erSUCCESS;
