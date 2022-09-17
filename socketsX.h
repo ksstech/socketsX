@@ -98,7 +98,6 @@ typedef struct sock_sec_t {
 	mbedtls_ssl_context			ssl ;
 	mbedtls_ssl_config			conf ;
 	mbedtls_x509_crt			cacert ;
-	s8_t						Verify ;
 } sock_sec_t;
 
 typedef struct __attribute__((aligned(4))) netx_t {
@@ -114,7 +113,6 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	size_t maxTx, maxRx;
 	s16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
-	union {
 	struct __attribute__((packed)) {
 		u8_t trymax;				// max times to try read
 		u8_t trynow;				// times tried
@@ -122,28 +120,32 @@ typedef struct __attribute__((aligned(4))) netx_t {
 		u8_t type:3;				// valid 1->5, STREAM/TCP, DGRAM/UDP or RAW/RAW
 		u8_t uu:5;
 	};
+	union netx_dbg_u {				// debug control flags
 		struct __attribute__((packed)) {
 			u8_t connect:1;			// connected
-			// debug control flags
-			u8_t d_ndebug:1;		// change syslog level in xNetGetError()
-			u8_t d_eagain:1;		// show EAGAIN errors
-			u8_t d_open:1;			// open & socket
-			u8_t d_host:1;			// gethost & connect
-			u8_t d_bANDl:1;			// bind & listen
-			u8_t d_timing:1;
-			u8_t d_accept:1;
-			u8_t d_select:1;
-			u8_t d_write:1;
-			u8_t d_read:1;
-			u8_t d_data:1;
-			u8_t d_close:1;
-			u8_t d_secure:1;		// Mbed TLS debug enable
-			u8_t d_level:2;			// Mbed TLS 1=0, 2=1, 3-2, 4=3 (0=no debug not allowed)
+			u8_t o:1;				// open & socket
+			u8_t h:1;				// gethost & connect
+			u8_t bl:1;				// bind & listen
+			u8_t t:1;				// timeouts
+			u8_t a:1;				// accept
+			u8_t s:1;				// select
+			u8_t w:1;				// write/send
+			u8_t r:1;				// read/recv
+			u8_t d:1;				// data (used with read & write)
+			u8_t cl:1;				// close
+			u8_t sl:1;				// change syslog level in xNetGetError()
+			u8_t ea:1;				// show EAGAIN errors
+			// TLS related
+			u8_t ver:1;				// enable certificate verification
+			u8_t sec:1;				// enable TLS debug
+			u8_t lvl:2;				// Mbed TLS 1=0, 2=1, 3=2, 4=3 (0=no debug not allowed)
 		};
-		u16_t d_flags;
-	};
+		u16_t val;
+	} d;
 } netx_t;
 DUMB_STATIC_ASSERT( sizeof(netx_t) == (36 + sizeof(struct sockaddr_in)));
+
+typedef union netx_dbg_u netx_dbg_t;
 
 // ####################################### Global variables ########################################
 
