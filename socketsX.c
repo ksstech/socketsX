@@ -670,10 +670,8 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
  * @param	mSecTime	number of milli-seconds to block
  * @return	number of bytes written (ie < erSUCCESS indicates error code)
  */
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
-	IF_myASSERT(debugPARAM, halCONFIG_inMEM(pBuf)) ;
-	IF_myASSERT(debugPARAM, xLen > 0) ;
 int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inMEM(pBuf) && xLen > 0);
 	int	iRV, xLenDone = 0 ;
 	mSecTime = xNetAdjustTimeout(psC, mSecTime) ;
 	do {
