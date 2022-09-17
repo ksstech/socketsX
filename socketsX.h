@@ -90,16 +90,16 @@ enum {
 // ########################################### structures ##########################################
 
 typedef struct sock_sec_t {
+	const char *				pcCert ;
+	size_t						szCert ;
 	mbedtls_net_context			server_fd ;
 	mbedtls_entropy_context		entropy ;
 	mbedtls_ctr_drbg_context	ctr_drbg ;
 	mbedtls_ssl_context			ssl ;
 	mbedtls_ssl_config			conf ;
 	mbedtls_x509_crt			cacert ;
-	const char *				pcCert ;
-	size_t						szCert ;
 	s8_t						Verify ;
-} sock_sec_t ;
+} sock_sec_t;
 
 typedef struct __attribute__((aligned(4))) netx_t {
 	union {
