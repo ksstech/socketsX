@@ -347,7 +347,6 @@ int xNetSecurePreConnect(netx_t * psC) { return 0; }
 static int xNetConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
-	psC->connect = 1;
   	if (iRV != erSUCCESS)
   		return xNetSyslog(psC, __FUNCTION__, errno);
 	if (debugTRACK && psC->d.h)
