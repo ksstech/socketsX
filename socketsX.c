@@ -156,10 +156,10 @@ static int xNetMbedInit(netx_t * psC) {
 	char random_key[xpfMAX_LEN_X64] ;
 	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime) ;
 	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV) ;
-	if (iRV != 0)
 #if 1
 	iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) psC->psSec->pcCert, psC->psSec->szCert) ;
 #else
+	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_ctr_drbg_seed", iRV) ;
 	if (psC->psSec->pcCert) {			// use provided certificate
 		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, psC->psSec->pcCert, psC->psSec->szCert) ;
@@ -167,18 +167,18 @@ static int xNetMbedInit(netx_t * psC) {
 		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len) ;
 	}
 #endif
-	if (iRV != 0)
+	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_x509_crt_parse", iRV);
 	iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
 			(psC->pHost == 0)			? MBEDTLS_SSL_IS_SERVER			: MBEDTLS_SSL_IS_CLIENT,
 			(psC->type == SOCK_STREAM)	? MBEDTLS_SSL_TRANSPORT_STREAM	: MBEDTLS_SSL_TRANSPORT_DATAGRAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
-	if (iRV != 0)
 		return xNetGetError(psC, "mbedtls_ssl_config_defaults", iRV);
+	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_ssl_config_defaults", iRV);
 	iRV = mbedtls_ssl_setup( &psC->psSec->ssl, &psC->psSec->conf);
-	if (iRV != 0)
 		return xNetGetError(psC, "mbedtls_ssl_setup", iRV);
+	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_ssl_setup", iRV);
 	mbedtls_ssl_conf_ca_chain(&psC->psSec->conf, &psC->psSec->cacert, NULL);
 	mbedtls_ssl_conf_rng( &psC->psSec->conf, mbedtls_ctr_drbg_random, &psC->psSec->ctr_drbg );
@@ -239,7 +239,7 @@ static int xNetGetHost(netx_t * psC) {
 	char portnum[16];
 	snprintf(portnum, sizeof(portnum), "%d", ntohs(psC->sa_in.sin_port));
 	int iRV = getaddrinfo(psC->pHost, portnum, &sAI, &psAI);
-	if (iRV != 0 || psAI == NULL) {
+	if (iRV != erSUCCESS || psAI == NULL) {
 		iRV = xNetSyslog(psC, __FUNCTION__, errno);
 	} else {
 		struct sockaddr_in * sa_in = (struct sockaddr_in *) psAI->ai_addr;
@@ -328,7 +328,7 @@ static int xNetSocket(netx_t * psC)  {
 	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
-	if (iRV < 0)
+	if (iRV < erSUCCESS)
 		return xNetSyslog(psC, __FUNCTION__, errno);
 	psC->sd = (s16_t) iRV;
 	if (psC->psSec)
@@ -347,8 +347,8 @@ int xNetSecurePreConnect(netx_t * psC) { return 0; }
 static int xNetConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
-  	if (iRV != 0)
 	psC->connect = 1;
+  	if (iRV != erSUCCESS)
   		return xNetSyslog(psC, __FUNCTION__, errno);
 	if (debugTRACK && psC->d.h)
 		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
@@ -418,18 +418,19 @@ u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
 
 int	xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
-	int iRV = 0 ;
+	int iRV = erSUCCESS;
 	if (psC->flags & SO_REUSEADDR) {
 		int enable = 1 ;
 		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 	}
-	if (iRV == 0) {
+	if (iRV == erSUCCESS) {
 		iRV = bind(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
-		if (iRV == 0 && psC->type == SOCK_STREAM)
+		if (iRV == erSUCCESS && psC->type == SOCK_STREAM)
 			iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
 	}
-	if (iRV < 0)
+	if (iRV != erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	}
 	if (debugTRACK && psC->d.bl)
 		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
@@ -448,8 +449,9 @@ int	xNetSecurePostConnect(netx_t * psC) {
 	}
 	mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd,
 			mbedtls_net_send, mbedtls_net_recv, NULL);
-	if (iRV != 0)
+	if (iRV != 0) {
 		return xNetSyslog(psC, __FUNCTION__, iRV);
+	}
 	if (debugTRACK && psC->d.sec)
 		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
@@ -530,8 +532,9 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	/* Also need to consider adding a loop to repeat the accept()
 	 * in case of EAGAIN or POOL_IS_EMPTY errors */
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
-	if (iRV < 0)
+	if (iRV == erFAILURE) {
 		return xNetSyslog(psServCtx, __FUNCTION__, errno);
+	}
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
 	psClntCtx->sd		= iRV ;
@@ -568,8 +571,9 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	int iRV = select(psC->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
 									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
 									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal) ;
-	if (iRV < 0)
+	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	}
 	if (debugTRACK && psC->d.s)
 		xNetReport(psC, Flag == selFLAG_READ ? "read/select" :
 							Flag == selFLAG_WRITE ? "write/select" :
@@ -623,8 +627,9 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 			iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in)) ;
 		}
 	}
-	if (iRV < 0)
+	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	}
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx ;
 	if (debugTRACK && psC->d.w)
 		xNetReport(psC, __FUNCTION__, iRV, pBuf, iRV);
@@ -653,8 +658,9 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize) ;
 		}
 	}
-	if (iRV < 0)
+	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	}
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx ;
 	if (debugTRACK && psC->d.r)
 		xNetReport(psC, __FUNCTION__, iRV, pBuf, iRV);
