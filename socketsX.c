@@ -430,6 +430,8 @@ int	xNetBindListen(netx_t * psC) {
 	}
 	if (iRV != erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	} else {
+		psC->error = 0;
 	}
 	if (debugTRACK && psC->d.bl)
 		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
@@ -451,6 +453,8 @@ int	xNetSecurePostConnect(netx_t * psC) {
 			mbedtls_net_send, mbedtls_net_recv, NULL);
 	if (iRV != 0) {
 		return xNetSyslog(psC, __FUNCTION__, iRV);
+	} else {
+		psC->error = 0;
 	}
 	if (debugTRACK && psC->d.sec)
 		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
@@ -534,6 +538,8 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
 	if (iRV == erFAILURE) {
 		return xNetSyslog(psServCtx, __FUNCTION__, errno);
+	} else {
+		psServCtx->error = 0;
 	}
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
@@ -573,6 +579,8 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal) ;
 	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	} else {
+		psC->error = 0;
 	}
 	if (debugTRACK && psC->d.s)
 		xNetReport(psC, Flag == selFLAG_READ ? "read/select" :
@@ -629,6 +637,8 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	}
 	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	} else {
+		psC->error = 0;
 	}
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx ;
 	if (debugTRACK && psC->d.w)
@@ -660,6 +670,8 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	}
 	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
+	} else {
+		psC->error = 0;
 	}
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx ;
 	if (debugTRACK && psC->d.r)
