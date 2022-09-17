@@ -111,7 +111,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		vRtosFree(pcMess);
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
 	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
-	return psC->error ? erFAILURE : erSUCCESS ;
+	return psC->error ? erFAILURE : erSUCCESS;
 }
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
@@ -189,7 +189,7 @@ static int xNetMbedInit(netx_t * psC) {
 		mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
 	}
 	#endif
- 	return iRV ;
+ 	return iRV;
 }
 
 static void vNetMbedDeInit(netx_t * psC) {
@@ -405,11 +405,11 @@ u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
 	// adjust the lower limit.
 	if (mSecTime < configXNET_MIN_TIMEOUT)
 		mSecTime = configXNET_MIN_TIMEOUT ;
-	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES)
+	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) {
 		psC->trymax = configXNET_MAX_RETRIES ;
-	else
+	} else {
 		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT ;
-
+	}
 	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
 	if (debugTRACK && psC->d.t)
 		xNetReport(psC, __FUNCTION__, mSecTime, 0, 0);
@@ -420,7 +420,7 @@ int	xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
 	int iRV = erSUCCESS;
 	if (psC->flags & SO_REUSEADDR) {
-		int enable = 1 ;
+		int enable = 1;
 		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 	}
 	if (iRV == erSUCCESS) {
@@ -544,9 +544,9 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
 	psClntCtx->sd		= iRV ;
-	psClntCtx->type		= psServCtx->type ;			// Make same type TCP/UDP/RAW
-	psClntCtx->psSec	= psServCtx->psSec ;		// TBC same security ??
+	psClntCtx->type		= psServCtx->type ;				// Make same type TCP/UDP/RAW
 	psClntCtx->d.val	= psServCtx->d.val;				// inherit all flags
+	psClntCtx->psSec	= psServCtx->psSec ;			// TBC same security ??
 	if (debugTRACK && psServCtx->d.a) {
 		xNetReport(psServCtx, __FUNCTION__, iRV, 0, 0) ;
 		xNetReport(psClntCtx, __FUNCTION__, iRV, 0, 0) ;
