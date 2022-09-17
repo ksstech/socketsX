@@ -155,10 +155,44 @@ static int xNetMbedInit(netx_t * psC) {
 
 	char random_key[xpfMAX_LEN_X64] ;
 	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime) ;
-	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV) ;
 #if 1
-	iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) psC->psSec->pcCert, psC->psSec->szCert) ;
+	char * pcName = NULL;
+	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV) ;
+	if (iRV == erSUCCESS) {
+		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) psC->psSec->pcCert, psC->psSec->szCert);
+		if (iRV == erSUCCESS) {
+			iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
+					psC->pHost ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
+					(psC->type == SOCK_STREAM) ? MBEDTLS_SSL_TRANSPORT_STREAM : MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+					MBEDTLS_SSL_PRESET_DEFAULT);
+			if (iRV == erSUCCESS) {
+				iRV = mbedtls_ssl_setup( &psC->psSec->ssl, &psC->psSec->conf);
+				if (iRV == erSUCCESS) {
+					mbedtls_ssl_conf_ca_chain(&psC->psSec->conf, &psC->psSec->cacert, NULL);
+					mbedtls_ssl_conf_rng( &psC->psSec->conf, mbedtls_ctr_drbg_random, &psC->psSec->ctr_drbg );
+					#if	(CONFIG_MBEDTLS_DEBUG > 0)
+					if (debugTRACK && psC->d.sec) {
+						mbedtls_debug_set_threshold(psC->d.lvl + 1);
+						mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
+					}
+					#endif
+				} else {
+					pcName = "mbedtls_ssl_setup";
+				}
+			} else {
+				pcName = "mbedtls_ssl_config_defaults";
+			}
+		} else {
+			pcName = "mbedtls_x509_crt_parse";
+		}
+	} else {
+		pcName = "mbedtls_ctr_drbg_seed";
+	}
+	if (iRV != erSUCCESS || pcName)
+		return xNetSyslog(psC, pcName, iRV);
+ 	return iRV;
 #else
+	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV) ;
 	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_ctr_drbg_seed", iRV) ;
 	if (psC->psSec->pcCert) {			// use provided certificate
@@ -166,18 +200,15 @@ static int xNetMbedInit(netx_t * psC) {
 	} else {							// use default certificate list
 		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len) ;
 	}
-#endif
 	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_x509_crt_parse", iRV);
 	iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
 			(psC->pHost == 0)			? MBEDTLS_SSL_IS_SERVER			: MBEDTLS_SSL_IS_CLIENT,
 			(psC->type == SOCK_STREAM)	? MBEDTLS_SSL_TRANSPORT_STREAM	: MBEDTLS_SSL_TRANSPORT_DATAGRAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
-		return xNetGetError(psC, "mbedtls_ssl_config_defaults", iRV);
 	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_ssl_config_defaults", iRV);
 	iRV = mbedtls_ssl_setup( &psC->psSec->ssl, &psC->psSec->conf);
-		return xNetGetError(psC, "mbedtls_ssl_setup", iRV);
 	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_ssl_setup", iRV);
 	mbedtls_ssl_conf_ca_chain(&psC->psSec->conf, &psC->psSec->cacert, NULL);
@@ -190,6 +221,7 @@ static int xNetMbedInit(netx_t * psC) {
 	}
 	#endif
  	return iRV;
+#endif
 }
 
 static void vNetMbedDeInit(netx_t * psC) {
