@@ -149,14 +149,14 @@ int	xNetOpen(netx_t * psConn) ;
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) ;
 
 // read/write with traditional buffers
-int	xNetWrite(netx_t * psConn, u8_t * pBuf, int xLen) ;
-int	xNetWriteBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
-int	xNetRead(netx_t * psConn, u8_t * pBuf, int xLen) ;
-int	xNetReadBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
+int	xNetSend(netx_t * psConn, u8_t * pBuf, int xLen) ;
+int	xNetSendBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
+int	xNetRecv(netx_t * psConn, u8_t * pBuf, int xLen) ;
+int	xNetRecvBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
 
 // read/write using managed buffers
-int	xNetWriteFromBuf(netx_t *, ubuf_t *, u32_t) ;
-int	xNetReadToBuf(netx_t *, ubuf_t *, u32_t) ;
+int	xNetSendUBuf(netx_t *, ubuf_t *, u32_t) ;
+int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t) ;
 
 int	xNetClose(netx_t * psConn) ;
 void xNetReportStats(void) ;

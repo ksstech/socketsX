@@ -607,7 +607,7 @@ int	xNetClose(netx_t * psC) {
  * @return	on success, positive number 1 -> iRV -> xLen indicating number of bytes written
  * 			on failure, -1 with error set to the actual code
  */
-int	xNetWrite(netx_t * psC, u8_t * pBuf, int xLen) {
+int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inMEM(pBuf) &&  xLen > 0);
 	int iRV ;
@@ -629,7 +629,7 @@ int	xNetWrite(netx_t * psC, u8_t * pBuf, int xLen) {
 }
 
 /**
- * xNetRead()
+ * @brief
  * @param	psC
  * @param	pBuf
  * @param	xLen
@@ -637,7 +637,7 @@ int	xNetWrite(netx_t * psC, u8_t * pBuf, int xLen) {
  * @return	on success, positive number 1 -> iRV -> xLen indicating number of bytes read
  * 			on failure,
  */
-int	xNetRead(netx_t * psC, u8_t * pBuf, int xLen) {
+int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	int	iRV ;
 	if (psC->psSec) {
@@ -661,7 +661,7 @@ int	xNetRead(netx_t * psC, u8_t * pBuf, int xLen) {
 // #################################################################################################
 
 /**
- * xNetWriteBlocks() - write to a TCP/UDP socket connection
+ * @brief	Send memory buffer in smaller blocks using socket connection
  * @param	psC	pointer to connection context
  * @param	pBuf		pointer to the buffer to write from
  * @param	xLen		number of bytes in buffer to write
@@ -669,10 +669,10 @@ int	xNetRead(netx_t * psC, u8_t * pBuf, int xLen) {
  * @param	mSecTime	number of milli-seconds to block
  * @return	number of bytes written (ie < erSUCCESS indicates error code)
  */
-int	xNetWriteBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
 	IF_myASSERT(debugPARAM, halCONFIG_inMEM(pBuf)) ;
 	IF_myASSERT(debugPARAM, xLen > 0) ;
+int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	int	iRV, xLenDone = 0 ;
 	mSecTime = xNetAdjustTimeout(psC, mSecTime) ;
 	do {
@@ -681,7 +681,7 @@ int	xNetWriteBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 			break ;
 		if (iRV == 0)
 			continue ;						// try again
-		iRV = xNetWrite(psC, pBuf + xLenDone, xLen - xLenDone) ;
+		iRV = xNetSend(psC, pBuf + xLenDone, xLen - xLenDone) ;
 		if (iRV > -1) {
 			xLenDone += iRV ;
 		} else if (psC->error == EAGAIN) {
@@ -694,21 +694,21 @@ int	xNetWriteBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 }
 
 /**
- * xNetReadBlocks() - read from a TCP/UDP connection
- * @param[in]   psC = pointer to connection context
- * @param[in]	pBuf = pointer to the buffer to read into
- * @param[in]	xLen = max number of bytes in buffer to read
- * @param[in]	i16Flags = flags as defined in socket.h
- * @param[in]	mSecTime = number of milli-seconds to block
+ * @brief	read from a TCP/UDP connection
+ * @param   psC = pointer to connection context
+ * @param	pBuf = pointer to the buffer to read into
+ * @param	xLen = max number of bytes in buffer to read
+ * @param	i16Flags = flags as defined in socket.h
+ * @param	mSecTime = number of milli-seconds to block
  * @return	  number of bytes read (ie < erSUCCESS indicates error code)
  */
-int	xNetReadBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
+int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
 	mSecTime = xNetAdjustTimeout(psC, mSecTime) ;
 	xNetSetRecvTO(psC, mSecTime) ;
 	int	iRV, xLenDone = 0 ;
 	do {
-		iRV = xNetRead(psC, pBuf + xLenDone, xLen - xLenDone) ;
+		iRV = xNetRecv(psC, pBuf + xLenDone, xLen - xLenDone) ;
 		if (iRV > -1) {
 			xLenDone +=	iRV ;
 		} else if (psC->error == EAGAIN) {
@@ -722,9 +722,9 @@ int	xNetReadBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 
 // #################################################################################################
 
-int	xNetWriteFromBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
+int	xNetSendUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
-	int	iRV = xNetWriteBlocks(psC, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime) ;
+	int	iRV = xNetSendBlocks(psC, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {
 		psBuf->IdxRD	+= iRV ;
 		psBuf->Used		-= iRV ;
@@ -732,9 +732,9 @@ int	xNetWriteFromBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	return iRV ;
 }
 
-int	xNetReadToBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
+int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
-	int iRV = xNetReadBlocks(psC, psBuf->pBuf + psBuf->IdxWR, psBuf->Used, mSecTime) ;
+	int iRV = xNetRecvBlocks(psC, psBuf->pBuf + psBuf->IdxWR, psBuf->Used, mSecTime) ;
 	if (iRV > erSUCCESS) {
 		psBuf->IdxWR	+= iRV ;
 		psBuf->Used		+= iRV ;
