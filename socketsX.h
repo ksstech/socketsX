@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include "esp_netif.h"
-
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
