@@ -1,8 +1,12 @@
 # SOCKETSX
 set( srcs "socketsX.c" )
 set( include_dirs "." )
-set( requires buffers mbedtls esp_netif )
-set( priv_requires common hal_esp32 printfx rtos-support syslog systiming )
+set( requires 
+	buffers mbedtls esp_netif 
+)
+set( priv_requires 
+	common hal_esp32 main printfx rtos-support syslog systiming 
+)
 
 idf_component_register(
 	SRCS ${srcs} 
