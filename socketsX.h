@@ -68,6 +68,11 @@ extern "C" {
 #define	IP_PORT_MQTT 				1883				// TCP Insecure stream port
 #define	IP_PORT_MQTTS				8883				// TCP/TLS Secure stream port
 
+#define	NETX_DBG_FLAGS(O, H, BL, T, A, S, W, R, D, CL, SL, EA, VER, SEC, LVL, HTTP) (netx_dbg_t) {	\
+	.o=O, .h=H, .bl=BL, .t=T, .a=A, .s=S, .w=W, .r=R, .d=D, .cl=CL, .sl=SL, .ea=EA,					\
+	.ver=VER, .sec=SEC, .lvl=LVL, .http=HTTP														\
+}
+
 // ########################################### enumerations ########################################
 
 enum {
@@ -136,8 +141,11 @@ typedef struct __attribute__((aligned(4))) netx_t {
 			u8_t ver:1;				// enable certificate verification
 			u8_t sec:1;				// enable TLS debug
 			u8_t lvl:2;				// Mbed TLS 1=0, 2=1, 3=2, 4=3 (0=no debug not allowed)
+			// HTTP support
+			u8_t http:1;
+			u16_t spare:15;
 		};
-		u16_t val;
+		u32_t val;
 	} d;
 } netx_t;
 DUMB_STATIC_ASSERT( sizeof(netx_t) == (36 + sizeof(struct sockaddr_in)));
