@@ -3,19 +3,19 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include "main.h"
+#include "hal_variables.h"
+
 #include "socketsX.h"
 #include "printfx.h"									// +x_definitions +stdarg +stdint +stdio
 #include "syslog.h"
 #include "systiming.h"
 #include "x_errors_events.h"
 
-#include <errno.h>
-#include "mbedtls/error.h"
-
 #ifdef	CONFIG_MBEDTLS_DEBUG
 	#include "mbedtls/debug.h"
 #endif
+#include "mbedtls/error.h"
+#include <errno.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
@@ -53,9 +53,6 @@
  *		https://github.com/espressif/esp-idf/issues/2540
  */
 
-/**
- *
- */
 EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks) {
 	#define xnetSTEP	10
 	#define xnetROUND	(xnetSTEP / 2)
