@@ -81,16 +81,16 @@ EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks) {
 static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	psC->error = eCode;
 	bool fAlloc = 0;
-	char * pcMess = NULL ;
+	char * pcMess = NULL;
 	 // Lowest	: MBEDTLS_ERR_SSL_HW_ACCEL_FAILED  			-0x7F80
 	 // Highest	: MBEDTLS_ERR_PEM_NO_HEADER_FOOTER_PRESENT	-0x1080
 	if (INRANGE(-0x7F80, eCode, -0x1080)) {
 		if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
 			psC->error = EAGAIN;
 		} else {
-			pcMess = pvRtosMalloc(xnetBUFFER_SIZE) ;
+			pcMess = pvRtosMalloc(xnetBUFFER_SIZE);
 			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
-			fAlloc = 1 ;
+			fAlloc = 1;
 		}
 	} else {
 		#ifdef LWIP_PROVIDE_ERRNO
@@ -109,7 +109,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	// Under certain conditions we can close the socket automatically
 //	if (psC->error == ENOTCONN) xNetClose(psC);
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
-	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE ; */
+	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE; */
 	return psC->error ? erFAILURE : erSUCCESS;
 }
 
@@ -127,7 +127,7 @@ void vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
 static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *flags) {
 	(void) data;
 	printfx("xNetMbedVerify: Verifying certificate at depth %d:\r\n", depth);
-	pc_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE) ;
+	pc_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE);
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
 	printfx(pBuf);
 	if (*flags == 0) {
@@ -136,27 +136,27 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
 		printfx("xNetMbedVerify: %s\r\n", pBuf);
 	}
-	vRtosFree(pBuf) ;
-	return 0 ;
+	vRtosFree(pBuf);
+	return 0;
 }
 
 static int xNetMbedInit(netx_t * psC) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC->psSec)) ;
-	IF_myASSERT(debugPARAM, halCONFIG_inFLASH(psC->psSec->pcCert)) ;
-	IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC->psSec));
+	IF_myASSERT(debugPARAM, halCONFIG_inFLASH(psC->psSec->pcCert));
+	IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1);
 
-	mbedtls_net_init(&psC->psSec->server_fd) ;
-	mbedtls_ssl_init(&psC->psSec->ssl) ;
-	mbedtls_entropy_init(&psC->psSec->entropy ) ;
-	mbedtls_ctr_drbg_init(&psC->psSec->ctr_drbg) ;
-	mbedtls_x509_crt_init(&psC->psSec->cacert) ;
-	mbedtls_ssl_config_init(&psC->psSec->conf) ;
+	mbedtls_net_init(&psC->psSec->server_fd);
+	mbedtls_ssl_init(&psC->psSec->ssl);
+	mbedtls_entropy_init(&psC->psSec->entropy );
+	mbedtls_ctr_drbg_init(&psC->psSec->ctr_drbg);
+	mbedtls_x509_crt_init(&psC->psSec->cacert);
+	mbedtls_ssl_config_init(&psC->psSec->conf);
 
-	char random_key[xpfMAX_LEN_X64] ;
-	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime) ;
+	char random_key[xpfMAX_LEN_X64];
+	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime);
 #if 1
 	char * pcName = NULL;
-	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV) ;
+	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV);
 	if (iRV == erSUCCESS) {
 		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) psC->psSec->pcCert, psC->psSec->szCert);
 		if (iRV == erSUCCESS) {
@@ -191,13 +191,13 @@ static int xNetMbedInit(netx_t * psC) {
 		return xNetSyslog(psC, pcName, iRV);
  	return iRV;
 #else
-	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV) ;
+	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV);
 	if (iRV != erSUCCESS)
-		return xNetSyslog(psC, "mbedtls_ctr_drbg_seed", iRV) ;
+		return xNetSyslog(psC, "mbedtls_ctr_drbg_seed", iRV);
 	if (psC->psSec->pcCert) {			// use provided certificate
-		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, psC->psSec->pcCert, psC->psSec->szCert) ;
+		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, psC->psSec->pcCert, psC->psSec->szCert);
 	} else {							// use default certificate list
-		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len) ;
+		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len);
 	}
 	if (iRV != erSUCCESS)
 		return xNetSyslog(psC, "mbedtls_x509_crt_parse", iRV);
@@ -224,12 +224,12 @@ static int xNetMbedInit(netx_t * psC) {
 }
 
 static void vNetMbedDeInit(netx_t * psC) {
-	mbedtls_net_free(&psC->psSec->server_fd) ;
-	mbedtls_x509_crt_free(&psC->psSec->cacert) ;
-	mbedtls_ssl_free(&psC->psSec->ssl) ;
-	mbedtls_ssl_config_free(&psC->psSec->conf) ;
-	mbedtls_ctr_drbg_free(&psC->psSec->ctr_drbg) ;
-	mbedtls_entropy_free(&psC->psSec->entropy) ;
+	mbedtls_net_free(&psC->psSec->server_fd);
+	mbedtls_x509_crt_free(&psC->psSec->cacert);
+	mbedtls_ssl_free(&psC->psSec->ssl);
+	mbedtls_ssl_config_free(&psC->psSec->conf);
+	mbedtls_ctr_drbg_free(&psC->psSec->ctr_drbg);
+	mbedtls_entropy_free(&psC->psSec->entropy);
 }
 
 /*
@@ -321,14 +321,14 @@ static int xNetGetHost(netx_t * psC) {
 	P("Host=:%s psHE=%p Size=%d iRV=%d res=%d\r\n", psC->pHost, psHE, hstbuflen, iRV, psAI);
 	/*  Check for errors.  */
 	if (psAI || psHE == NULL) {
-		iRV = xNetSyslog(psC, __FUNCTION__, psAI) ;
+		iRV = xNetSyslog(psC, __FUNCTION__, psAI);
 	} else {
 		IF_P(psHE, "Name=%s  Type=%d  Len=%d  List=%p",
 				psHE->h_name, psHE->h_addrtype, psHE->h_length, psHE->h_addr_list);
 		IF_P(psHE && psHE->h_addr_list, "  List[0]=%p", psHE->h_addr_list[0]);
 		IF_P(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "  Addr[0]=%-#I", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
 		P(strCRLF);
-		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0] ;
+		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
 		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
 		if (debugTRACK && psC->d.h)
 			xNetReport(psC, __FUNCTION__, 0, 0, 0);
@@ -403,7 +403,7 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 		timeVal.tv_usec = (mSecTime * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND;
 		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal));
 		/*if (debugTRACK && psC->d.t) {
-			socklen_t SockOptLen ;
+			socklen_t SockOptLen;
 			SockOptLen = sizeof(timeVal);
 			getsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen);
 			u32_t tOut = (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC);
@@ -424,21 +424,21 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
  * @return	Actual period configured
  */
 u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	psC->trynow	= 0;
 	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
 	if (mSecTime <= flagXNET_NONBLOCK) {
-		psC->trymax	= 1 ;
+		psC->trymax	= 1;
  		psC->tOut = mSecTime;
-		return mSecTime ;
+		return mSecTime;
 	}
 	// adjust the lower limit.
 	if (mSecTime < configXNET_MIN_TIMEOUT)
-		mSecTime = configXNET_MIN_TIMEOUT ;
+		mSecTime = configXNET_MIN_TIMEOUT;
 	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) {
-		psC->trymax = configXNET_MAX_RETRIES ;
+		psC->trymax = configXNET_MAX_RETRIES;
 	} else {
-		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT ;
+		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT;
 	}
 	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
 	if (debugTRACK && psC->d.t)
@@ -447,7 +447,7 @@ u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
 }
 
 int	xNetBindListen(netx_t * psC) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int iRV = erSUCCESS;
 	if (psC->flags & SO_REUSEADDR) {
 		int enable = 1;
@@ -497,53 +497,53 @@ int	xNetSecurePostConnect(netx_t * psC) {
  * @return	status of last socket operation (ie < erSUCCESS indicates error code)
  */
 int	xNetOpen(netx_t * psC) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC)) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int	iRV;
 	xNetWaitLx(flagLX_ANY, portMAX_DELAY);
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
-		iRV = xNetMbedInit(psC) ;
+		iRV = xNetMbedInit(psC);
 		if (iRV != erSUCCESS) {
-			vNetMbedDeInit(psC) ;
-			return iRV ;
+			vNetMbedDeInit(psC);
+			return iRV;
 		}
 	}
 
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psC->pHost) {							// Client type connection ?
-		iRV = xNetGetHost(psC) ;
+		iRV = xNetGetHost(psC);
 		if (iRV < erSUCCESS)
 			return iRV;
 	} else {
-		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY) ;
+		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 
 	// STEP 2: open a [secure] socket to the remote
-	iRV = xNetSocket(psC) ;
+	iRV = xNetSocket(psC);
 	if (iRV < erSUCCESS)
 		return iRV;
 	#if	(netxBUILD_SPC == 1)
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
-		iRV = xNetSecurePreConnect(psC) ;
+		iRV = xNetSecurePreConnect(psC);
 		if (iRV < erSUCCESS)
 			return iRV;
 	}
 	#endif
 
 	// STEP 4: Initialize Client or Server connection
-	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC) ;
+	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
 	if (iRV < erSUCCESS)
 		return iRV;
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
-		iRV = xNetSecurePostConnect(psC) ;
+		iRV = xNetSecurePostConnect(psC);
 		if (iRV < erSUCCESS)
 			return iRV;
 	}
 	if (debugTRACK && psC->d.o)
 		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
-	return iRV ;
+	return iRV;
 }
 
 /**
@@ -560,8 +560,8 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	int iRV = xNetSetRecvTO(psServCtx, mSecTime);
 	if (iRV < 0)
 		return iRV;
-	memset(psClntCtx, 0, sizeof(netx_t)) ;		// clear the client context
-	socklen_t len = sizeof(struct sockaddr_in) ;
+	memset(psClntCtx, 0, sizeof(netx_t));		// clear the client context
+	socklen_t len = sizeof(struct sockaddr_in);
 
 	/* Also need to consider adding a loop to repeat the accept()
 	 * in case of EAGAIN or POOL_IS_EMPTY errors */
@@ -573,15 +573,15 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	}
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
-	psClntCtx->sd		= iRV ;
-	psClntCtx->type		= psServCtx->type ;				// Make same type TCP/UDP/RAW
+	psClntCtx->sd		= iRV;
+	psClntCtx->type		= psServCtx->type;				// Make same type TCP/UDP/RAW
 	psClntCtx->d.val	= psServCtx->d.val;				// inherit all flags
-	psClntCtx->psSec	= psServCtx->psSec ;			// TBC same security ??
+	psClntCtx->psSec	= psServCtx->psSec;			// TBC same security ??
 	if (debugTRACK && psServCtx->d.a) {
-		xNetReport(psServCtx, __FUNCTION__, iRV, 0, 0) ;
-		xNetReport(psClntCtx, __FUNCTION__, iRV, 0, 0) ;
+		xNetReport(psServCtx, __FUNCTION__, iRV, 0, 0);
+		xNetReport(psClntCtx, __FUNCTION__, iRV, 0, 0);
 	}
-	return iRV ;
+	return iRV;
 }
 
 /**
@@ -591,22 +591,22 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
  * @return
  */
 int	xNetSelect(netx_t * psC, uint8_t Flag) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && Flag < selFLAG_NUM) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && Flag < selFLAG_NUM);
 	// If the timeout is too short dont select() just simulate 1 socket ready...
 	if (psC->tOut <= configXNET_MIN_TIMEOUT)
 		return 1;
 	// Need to add code here to accommodate LwIP & OpenSSL for ESP32
-	fd_set	fdsSet ;
-	FD_ZERO(&fdsSet) ;
-	FD_SET(psC->sd, &fdsSet) ;
-	struct timeval	timeVal ;
-	timeVal.tv_sec	= psC->tOut / MILLIS_IN_SECOND ;
-	timeVal.tv_usec = (psC->tOut * MICROS_IN_MILLISEC) % MICROS_IN_SECOND ;
+	fd_set	fdsSet;
+	FD_ZERO(&fdsSet);
+	FD_SET(psC->sd, &fdsSet);
+	struct timeval	timeVal;
+	timeVal.tv_sec	= psC->tOut / MILLIS_IN_SECOND;
+	timeVal.tv_usec = (psC->tOut * MICROS_IN_MILLISEC) % MICROS_IN_SECOND;
 
 	// do select based on new timeout
 	int iRV = select(psC->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
 									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
-									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal) ;
+									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
 	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, errno);
 	} else {
@@ -615,7 +615,7 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	if (debugTRACK && psC->d.s)
 		xNetReport(psC, Flag == selFLAG_READ ? "read/select" :
 							Flag == selFLAG_WRITE ? "write/select" :
-							Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0) ;
+							Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
 	return iRV;
 }
 
@@ -655,14 +655,14 @@ int	xNetClose(netx_t * psC) {
 int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inMEM(pBuf) &&  xLen > 0);
-	int iRV ;
+	int iRV;
 	if (psC->psSec) {
-		iRV = mbedtls_ssl_write(&psC->psSec->ssl, (unsigned char *) pBuf, xLen) ;
+		iRV = mbedtls_ssl_write(&psC->psSec->ssl, (unsigned char *) pBuf, xLen);
 	} else {
 		if (psC->pHost) {
-			iRV = send(psC->sd, pBuf, xLen, psC->flags) ;
+			iRV = send(psC->sd, pBuf, xLen, psC->flags);
 		} else {
-			iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in)) ;
+			iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
 		}
 	}
 	if (iRV < erSUCCESS) {
@@ -670,7 +670,7 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	} else {
 		psC->error = 0;
 	}
-	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx ;
+	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
 	if (debugTRACK && psC->d.w)
 		xNetReport(psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
@@ -686,16 +686,16 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
  * 			on failure,
  */
 int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
-	int	iRV ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0));
+	int	iRV;
 	if (psC->psSec) {
-		iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen) ;
+		iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen);
 	} else {
 		if (psC->pHost) {
-			iRV = recv(psC->sd, pBuf, xLen, psC->flags) ;
+			iRV = recv(psC->sd, pBuf, xLen, psC->flags);
 		} else {										// UDP (connection-less) read
-			socklen_t i16AddrSize = sizeof(struct sockaddr_in) ;
-			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize) ;
+			socklen_t i16AddrSize = sizeof(struct sockaddr_in);
+			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 		}
 	}
 	if (iRV < erSUCCESS) {
@@ -703,10 +703,10 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	} else {
 		psC->error = 0;
 	}
-	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx ;
+	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
 	if (debugTRACK && psC->d.r)
 		xNetReport(psC, __FUNCTION__, iRV, pBuf, iRV);
-	return iRV ;
+	return iRV;
 }
 
 // #################################################################################################
@@ -722,24 +722,24 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
  */
 int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inMEM(pBuf) && xLen > 0);
-	int	iRV, xLenDone = 0 ;
-	mSecTime = xNetAdjustTimeout(psC, mSecTime) ;
+	int	iRV, xLenDone = 0;
+	mSecTime = xNetAdjustTimeout(psC, mSecTime);
 	do {
-		iRV = xNetSelect(psC, selFLAG_WRITE) ;
+		iRV = xNetSelect(psC, selFLAG_WRITE);
 		if (iRV < 0)
-			break ;
+			break;
 		if (iRV == 0)
-			continue ;						// try again
-		iRV = xNetSend(psC, pBuf + xLenDone, xLen - xLenDone) ;
+			continue;						// try again
+		iRV = xNetSend(psC, pBuf + xLenDone, xLen - xLenDone);
 		if (iRV > -1) {
-			xLenDone += iRV ;
+			xLenDone += iRV;
 		} else if (psC->error == EAGAIN) {
-			continue ;
+			continue;
 		} else {
-			break ;
+			break;
 		}
-	} while((++psC->trynow < psC->trymax) && (xLenDone < xLen)) ;
-	return (xLenDone > 0) ? xLenDone : iRV ;
+	} while((++psC->trynow < psC->trymax) && (xLenDone < xLen));
+	return (xLenDone > 0) ? xLenDone : iRV;
 }
 
 /**
@@ -752,43 +752,43 @@ int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
  * @return	  number of bytes read (ie < erSUCCESS indicates error code)
  */
 int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0)) ;
-	mSecTime = xNetAdjustTimeout(psC, mSecTime) ;
-	xNetSetRecvTO(psC, mSecTime) ;
-	int	iRV, xLenDone = 0 ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0));
+	mSecTime = xNetAdjustTimeout(psC, mSecTime);
+	xNetSetRecvTO(psC, mSecTime);
+	int	iRV, xLenDone = 0;
 	do {
-		iRV = xNetRecv(psC, pBuf + xLenDone, xLen - xLenDone) ;
+		iRV = xNetRecv(psC, pBuf + xLenDone, xLen - xLenDone);
 		if (iRV > -1) {
-			xLenDone +=	iRV ;
+			xLenDone +=	iRV;
 		} else if (psC->error == EAGAIN) {
-			continue ;
+			continue;
 		} else {
-			break ;
+			break;
 		}
- 	} while ((++psC->trynow < psC->trymax) && (xLenDone < xLen)) ;
-	return (xLenDone > 0) ? xLenDone : iRV ;
+ 	} while ((++psC->trynow < psC->trymax) && (xLenDone < xLen));
+	return (xLenDone > 0) ? xLenDone : iRV;
 }
 
 // #################################################################################################
 
 int	xNetSendUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
-	int	iRV = xNetSendBlocks(psC, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0));
+	int	iRV = xNetSendBlocks(psC, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime);
 	if (iRV > erSUCCESS) {
-		psBuf->IdxRD	+= iRV ;
-		psBuf->Used		-= iRV ;
+		psBuf->IdxRD	+= iRV;
+		psBuf->Used		-= iRV;
 	}
-	return iRV ;
+	return iRV;
 }
 
 int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0)) ;
-	int iRV = xNetRecvBlocks(psC, psBuf->pBuf + psBuf->IdxWR, psBuf->Used, mSecTime) ;
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0));
+	int iRV = xNetRecvBlocks(psC, psBuf->pBuf + psBuf->IdxWR, psBuf->Used, mSecTime);
 	if (iRV > erSUCCESS) {
-		psBuf->IdxWR	+= iRV ;
-		psBuf->Used		+= iRV ;
+		psBuf->IdxWR	+= iRV;
+		psBuf->Used		+= iRV;
 	}
-	return iRV ;
+	return iRV;
 }
 
 // #################################################################################################
@@ -800,7 +800,7 @@ void xNetReportStats(void) {
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
-	    	printfx("sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port) ;
+	    	printfx("sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port);
 	}
 	printfx(
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
@@ -817,8 +817,8 @@ void xNetReportStats(void) {
 			"TCP: Max Act="		mySTRINGIFY(CONFIG_LWIP_MAX_ACTIVE_TCP)
 			"  Listen="			mySTRINGIFY(CONFIG_LWIP_MAX_LISTENING_TCP) strCRLF
 			"UDP: Max PCBs="	mySTRINGIFY(CONFIG_LWIP_MAX_UDP_PCBS)
-			"  RxMboxSize=" 	mySTRINGIFY(CONFIG_UDP_RECVMBOX_SIZE) strCRLF) ;
-	void dbg_lwip_tcp_pcb_show(void) ; dbg_lwip_tcp_pcb_show() ;
-	void dbg_lwip_udp_pcb_show(void) ; dbg_lwip_udp_pcb_show() ;
-	void dbg_lwip_stats_show(void) ; dbg_lwip_stats_show() ;
+			"  RxMboxSize=" 	mySTRINGIFY(CONFIG_UDP_RECVMBOX_SIZE) strCRLF);
+	void dbg_lwip_tcp_pcb_show(void); dbg_lwip_tcp_pcb_show();
+	void dbg_lwip_udp_pcb_show(void); dbg_lwip_udp_pcb_show();
+	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
 }
