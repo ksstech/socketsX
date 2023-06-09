@@ -70,8 +70,7 @@ extern "C" {
 
 #define	NETX_DBG_FLAGS(O, H, BL, T, A, S, W, R, D, CL, SL, EA, VER, SEC, LVL, HTTP) (netx_dbg_t) {	\
 	.o=O, .h=H, .bl=BL, .t=T, .a=A, .s=S, .w=W, .r=R, .d=D, .cl=CL, .sl=SL, .ea=EA,					\
-	.ver=VER, .sec=SEC, .lvl=LVL, .http=HTTP														\
-}
+	.ver=VER, .sec=SEC, .lvl=LVL, .http=HTTP }
 
 // ########################################### enumerations ########################################
 
