@@ -62,10 +62,10 @@ EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks) {
 			(xTicks + xnetROUND) % xnetSTEP;
 	do {
 		CurBits = xRtosWaitStatusANY(ReqBits, xnetSTEP);
-		if ((CurBits & flagLX_STA) == flagLX_STA)
-			return flagLX_STA;
-		if ((CurBits & flagLX_SAP) == flagLX_SAP)
-			return flagLX_SAP;
+		if ((CurBits & flagL23_STA) == flagL23_STA)
+			return flagL23_STA;
+		if ((CurBits & flagL23_SAP) == flagL23_SAP)
+			return flagL23_SAP;
 		if (xTicks != portMAX_DELAY)
 			xTicks -= xnetSTEP;
 	} while (xTicks);
@@ -260,7 +260,7 @@ int xNetReport(netx_t * psC, const char * pFname, int Code, void * pBuf, int xLe
 
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
-	xNetWaitLx(flagLX_STA, portMAX_DELAY);
+	xNetWaitLx(flagL23_STA, portMAX_DELAY);
 	#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	struct addrinfo * psAI;
 	struct addrinfo sAI;
@@ -499,7 +499,7 @@ int	xNetSecurePostConnect(netx_t * psC) {
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int	iRV;
-	xNetWaitLx(flagLX_ANY, portMAX_DELAY);
+	xNetWaitLx(flagL23_ANY, portMAX_DELAY);
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
