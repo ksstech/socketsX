@@ -56,20 +56,20 @@
 EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks) {
 	#define xnetSTEP	10
 	#define xnetROUND	(xnetSTEP / 2)
-	EventBits_t CurBits;
 	xTicks = (xTicks < xnetSTEP) ? xnetSTEP :
 			(xTicks == portMAX_DELAY) ? portMAX_DELAY :
 			(xTicks + xnetROUND) % xnetSTEP;
 	do {
-		CurBits = xRtosWaitStatusANY(ReqBits, xnetSTEP);
-		if ((CurBits & flagL23_STA) == flagL23_STA)
-			return flagL23_STA;
-		if ((CurBits & flagL23_SAP) == flagL23_SAP)
-			return flagL23_SAP;
+		EventBits_t CurBits = xRtosWaitStatusANY(ReqBits, xnetSTEP);
+		if ((CurBits & flagLX_STA) == flagLX_STA)
+			return flagLX_STA;
+		if ((CurBits & flagLX_SAP) == flagLX_SAP)
+			return flagLX_SAP;
 		if (xTicks != portMAX_DELAY)
 			xTicks -= xnetSTEP;
+//		IF_CP(debugTIMING, "Step=%lu", xTicks);
 	} while (xTicks);
-	return CurBits;
+	return 0;
 }
 
 /**
