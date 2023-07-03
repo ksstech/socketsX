@@ -260,7 +260,8 @@ int xNetReport(netx_t * psC, const char * pFname, int Code, void * pBuf, int xLe
 
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
-	xNetWaitLx(flagL23_STA, portMAX_DELAY);
+	if (xNetWaitLx(flagLX_STA, pdMS_TO_TICKS(10000)) != flagLX_STA)
+		return erFAILURE;
 	#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	struct addrinfo * psAI;
 	struct addrinfo sAI;
@@ -499,7 +500,9 @@ int	xNetSecurePostConnect(netx_t * psC) {
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int	iRV;
-	xNetWaitLx(flagL23_ANY, portMAX_DELAY);
+	EventBits_t ebX = xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(10000));
+	if (ebX != flagLX_STA && ebX != flagLX_SAP)
+		return erFAILURE;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
