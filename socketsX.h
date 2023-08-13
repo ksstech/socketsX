@@ -80,26 +80,26 @@ enum {
 	stateL3_STARTING,				// MAC layer done, waiting for DHCP completion
 	stateL4_STARTING,				// IP layer 3 up, resolving SNTP, HTTP, TNET & cloud connectivity
 	stateL4_RUNNING,
-} ;
+};
 
 enum {
 	selFLAG_READ,
 	selFLAG_WRITE,
 	selFLAG_EXCEPT,
 	selFLAG_NUM,
-} ;
+};
 
 // ########################################### structures ##########################################
 
 typedef struct sock_sec_t {
-	const char *				pcCert ;
-	size_t						szCert ;
-	mbedtls_net_context			server_fd ;
-	mbedtls_entropy_context		entropy ;
-	mbedtls_ctr_drbg_context	ctr_drbg ;
-	mbedtls_ssl_context			ssl ;
-	mbedtls_ssl_config			conf ;
-	mbedtls_x509_crt			cacert ;
+	const char *				pcCert;
+	size_t						szCert;
+	mbedtls_net_context			server_fd;
+	mbedtls_entropy_context		entropy;
+	mbedtls_ctr_drbg_context	ctr_drbg;
+	mbedtls_ssl_context			ssl;
+	mbedtls_ssl_config			conf;
+	mbedtls_x509_crt			cacert;
 } sock_sec_t;
 
 typedef struct __attribute__((aligned(4))) netx_t {
@@ -158,24 +158,24 @@ typedef union netx_dbg_u netx_dbg_t;
 
 void xNetRestartStack( void );
 EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks);
-int	xNetReport(netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen) ;
-int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime) ;
-int	xNetSelect(netx_t * psConn, u8_t Flag) ;
-int	xNetOpen(netx_t * psConn) ;
-int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) ;
+int	xNetReport(report_t * psR, netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen);
+int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime);
+int	xNetSelect(netx_t * psConn, u8_t Flag);
+int	xNetOpen(netx_t * psConn);
+int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime);
 
 // read/write with traditional buffers
-int	xNetSend(netx_t * psConn, u8_t * pBuf, int xLen) ;
-int	xNetSendBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
-int	xNetRecv(netx_t * psConn, u8_t * pBuf, int xLen) ;
-int	xNetRecvBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime) ;
+int	xNetSend(netx_t * psConn, u8_t * pBuf, int xLen);
+int	xNetSendBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
+int	xNetRecv(netx_t * psConn, u8_t * pBuf, int xLen);
+int	xNetRecvBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
 
 // read/write using managed buffers
-int	xNetSendUBuf(netx_t *, ubuf_t *, u32_t) ;
-int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t) ;
+int	xNetSendUBuf(netx_t *, ubuf_t *, u32_t);
+int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
 
-int	xNetClose(netx_t * psConn) ;
-void xNetReportStats(void) ;
+int	xNetClose(netx_t * psConn);
+void xNetReportStats(report_t * psR);
 
 #ifdef __cplusplus
 }
@@ -190,11 +190,11 @@ void xNetReportStats(void) ;
 
 	while ((iRV = mbedtls_ssl_handshake(&psConn->psSec->ssl)) != erSUCCESS) {
 		if ((iRV != MBEDTLS_ERR_SSL_WANT_READ) && (iRV != MBEDTLS_ERR_SSL_WANT_WRITE)) {
-		  	break ;
+		  	break;
 		}
 	}
 		// In real life, we probably want to bail out when ret != 0
-			u32_t flags ;
+			u32_t flags;
 			if ((flags = mbedtls_ssl_get_verify_result(&psConn->psSec->ssl)) != erSUCCESS) {
 				char vrfy_buf[512];
 				mbedtls_x509_crt_verify_info( vrfy_buf, sizeof( vrfy_buf ), "  ! ", flags );

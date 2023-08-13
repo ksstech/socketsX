@@ -232,29 +232,22 @@ static void vNetMbedDeInit(netx_t * psC) {
 	mbedtls_entropy_free(&psC->psSec->entropy);
 }
 
-/*
- * xNetReport()
- */
-#if (debugTRACK)
-int xNetReport(netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	printfx_lock();
-	printfx_nolock("%C%-s%C\t%s  %s://%-I:%d ",
-			colourFG_CYAN, pFname, attrRESET,
+int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
+	WPRINTFX_LOCK(psR->pcBuf, psR->Size);
+	wprintfx(psR, "%C%-s%C\t%s  %s://%-I:%d ", colourFG_CYAN, pFname, attrRESET,
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(psC->sa_in.sin_addr.s_addr), ntohs(psC->sa_in.sin_port));
-	printfx_nolock("(%s)  sd=%d  %s=%d  Try=%d/%d  ",
-			psC->pHost, psC->sd, Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV",
-			Code, psC->trynow, psC->trymax);
-	printfx_nolock("TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
+	wprintfx(psR, "(%s)  sd=%d  %s=%d  Try=%d/%d  ", psC->pHost, psC->sd,
+			Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV", Code, psC->trynow, psC->trymax);
+	wprintfx(psR, "TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
 			psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen)
-		printfx_nolock("%!'+hhY\r\n", xLen, pBuf);
-	printfx_unlock();
+		wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
+	WPRINTFX_UNLOCK(psR->pcBuf, psR->Size);
 	return erSUCCESS;
 }
-#endif
 
 #define OPT_RESOLVE					1
 
@@ -277,7 +270,7 @@ static int xNetGetHost(netx_t * psC) {
 		struct sockaddr_in * sa_in = (struct sockaddr_in *) psAI->ai_addr;
 		psC->sa_in.sin_addr.s_addr = sa_in->sin_addr.s_addr;
 		if (debugTRACK && psC->d.h)
-			xNetReport(psC, __FUNCTION__, 0, 0, 0);
+			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	}
 	if (psAI != NULL)
 		freeaddrinfo(psAI);
@@ -302,7 +295,7 @@ static int xNetGetHost(netx_t * psC) {
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
 		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
 		if (debugTRACK && psC->d.h)
-			xNetReport(psC, __FUNCTION__, 0, 0, 0);
+			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	}
 	xRtosSemaphoreGive(&GetHostMux);
 	return iRV;
@@ -332,7 +325,7 @@ static int xNetGetHost(netx_t * psC) {
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
 		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
 		if (debugTRACK && psC->d.h)
-			xNetReport(psC, __FUNCTION__, 0, 0, 0);
+			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	}
 	free(tmphstbuf);
 	return iRV;
@@ -346,7 +339,7 @@ static int xNetGetHost(netx_t * psC) {
 //		psC->sa_in.sin_addr.s_addr = addr.u_addr.ip4.addr;
 		psSAI->sin_addr.s_addr = addr.u_addr.ip4.addr;
 		if (debugTRACK && psC->d.h)
-			xNetReport(psC, __FUNCTION__, 0, 0, 0);
+			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	} else {
 		TRACK();
 		iRV = xNetSyslog(psC, __FUNCTION__, errno);
@@ -366,7 +359,7 @@ static int xNetSocket(netx_t * psC)  {
 	if (psC->psSec)
 		psC->psSec->server_fd.fd = iRV;
 	if (debugTRACK && psC->d.o)
-		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -382,7 +375,7 @@ static int xNetConnect(netx_t * psC) {
   	if (iRV != erSUCCESS)
   		return xNetSyslog(psC, __FUNCTION__, errno);
 	if (debugTRACK && psC->d.h)
-		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -414,7 +407,7 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	if (iRV != 0)
 		return xNetSyslog(psC, __FUNCTION__, iRV);
 	if (debugTRACK && psC->d.t)
-		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -443,7 +436,7 @@ u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
 	}
 	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
 	if (debugTRACK && psC->d.t)
-		xNetReport(psC, __FUNCTION__, mSecTime, 0, 0);
+		xNetReport(NULL, psC, __FUNCTION__, mSecTime, 0, 0);
 	return 	psC->tOut;
 }
 
@@ -465,7 +458,7 @@ int	xNetBindListen(netx_t * psC) {
 		psC->error = 0;
 	}
 	if (debugTRACK && psC->d.bl)
-		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -488,7 +481,7 @@ int	xNetSecurePostConnect(netx_t * psC) {
 		psC->error = 0;
 	}
 	if (debugTRACK && psC->d.sec)
-		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -545,7 +538,7 @@ int	xNetOpen(netx_t * psC) {
 			return iRV;
 	}
 	if (debugTRACK && psC->d.o)
-		xNetReport(psC, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -581,8 +574,8 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	psClntCtx->d.val	= psServCtx->d.val;				// inherit all flags
 	psClntCtx->psSec	= psServCtx->psSec;			// TBC same security ??
 	if (debugTRACK && psServCtx->d.a) {
-		xNetReport(psServCtx, __FUNCTION__, iRV, 0, 0);
-		xNetReport(psClntCtx, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psServCtx, __FUNCTION__, iRV, 0, 0);
+		xNetReport(NULL, psClntCtx, __FUNCTION__, iRV, 0, 0);
 	}
 	return iRV;
 }
@@ -616,7 +609,7 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 		psC->error = 0;
 	}
 	if (debugTRACK && psC->d.s)
-		xNetReport(psC, Flag == selFLAG_READ ? "read/select" :
+		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
 							Flag == selFLAG_WRITE ? "write/select" :
 							Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
 	return iRV;
@@ -632,7 +625,7 @@ int	xNetClose(netx_t * psC) {
 	int	iRV = erSUCCESS;
 	if (psC->sd != -1) {
 		if (debugTRACK && psC->d.cl)
-			xNetReport(psC, "xNetClose1", psC->error, 0, 0);
+			xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
 		if (psC->psSec) {
 			mbedtls_ssl_close_notify(&psC->psSec->ssl);
 			vNetMbedDeInit(psC);
@@ -640,7 +633,7 @@ int	xNetClose(netx_t * psC) {
 		iRV = close(psC->sd);
 		psC->sd = -1;								// mark as closed
 		if (debugTRACK && psC->d.cl)
-			xNetReport(psC, "xNetClose2", iRV, 0, 0);
+			xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
 	}
 	return iRV;
 }
@@ -675,7 +668,7 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	}
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
 	if (debugTRACK && psC->d.w)
-		xNetReport(psC, __FUNCTION__, iRV, pBuf, iRV);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
@@ -708,7 +701,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	}
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
 	if (debugTRACK && psC->d.r)
-		xNetReport(psC, __FUNCTION__, iRV, pBuf, iRV);
+		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
@@ -796,16 +789,16 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 
 // #################################################################################################
 
-void xNetReportStats(void) {
+void xNetReportStats(report_t * psR) {
 	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
 	    struct sockaddr_in addr;
 	    socklen_t addr_size = sizeof(addr);
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
-	    	printfx("sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port);
+	    	wprintfx(psR, "sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port);
 	}
-	printfx(
+	wprintfx(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
