@@ -233,7 +233,7 @@ static void vNetMbedDeInit(netx_t * psC) {
 }
 
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	WPRINTFX_LOCK(psR->pcBuf, psR->Size);
+	printfx_lock(psR);
 	wprintfx(psR, "%C%-s%C\t%s  %s://%-I:%d ", colourFG_CYAN, pFname, attrRESET,
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
@@ -245,7 +245,7 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen)
 		wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
-	WPRINTFX_UNLOCK(psR->pcBuf, psR->Size);
+	printfx_unlock(psR);
 	return erSUCCESS;
 }
 
