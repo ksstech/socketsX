@@ -113,7 +113,7 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	int error;						// error code return by last operation..
 	int flags;						// Check implementation
 	size_t maxTx, maxRx;
-	s16_t sd;						// socket descriptor
+	i16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
 	struct __attribute__((packed)) {
 		u8_t trymax;				// max times to try read

@@ -355,7 +355,7 @@ static int xNetSocket(netx_t * psC)  {
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
 	if (iRV < erSUCCESS)
 		return xNetSyslog(psC, __FUNCTION__, errno);
-	psC->sd = (s16_t) iRV;
+	psC->sd = (i16_t) iRV;
 	if (psC->psSec)
 		psC->psSec->server_fd.fd = iRV;
 	if (debugTRACK && psC->d.o)
