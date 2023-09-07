@@ -404,10 +404,8 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 			myASSERT(tOut == mSecTime);
 		}*/
 	}
-	if (iRV != 0)
-		return xNetSyslog(psC, __FUNCTION__, iRV);
-	if (debugTRACK && psC->d.t)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__, iRV);
+	if (debugTRACK && psC->d.t) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -427,16 +425,14 @@ u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
 		return mSecTime;
 	}
 	// adjust the lower limit.
-	if (mSecTime < configXNET_MIN_TIMEOUT)
-		mSecTime = configXNET_MIN_TIMEOUT;
+	if (mSecTime < configXNET_MIN_TIMEOUT) mSecTime = configXNET_MIN_TIMEOUT;
 	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) {
 		psC->trymax = configXNET_MAX_RETRIES;
 	} else {
 		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT;
 	}
 	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
-	if (debugTRACK && psC->d.t)
-		xNetReport(NULL, psC, __FUNCTION__, mSecTime, 0, 0);
+	if (debugTRACK && psC->d.t) xNetReport(NULL, psC, __FUNCTION__, mSecTime, 0, 0);
 	return 	psC->tOut;
 }
 
@@ -452,13 +448,9 @@ int	xNetBindListen(netx_t * psC) {
 		if (iRV == erSUCCESS && psC->type == SOCK_STREAM)
 			iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
 	}
-	if (iRV != erSUCCESS) {
-		return xNetSyslog(psC, __FUNCTION__, errno);
-	} else {
-		psC->error = 0;
-	}
-	if (debugTRACK && psC->d.bl)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (iRV != erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
+	else psC->error = 0;
+	if (debugTRACK && psC->d.bl) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -475,13 +467,9 @@ int	xNetSecurePostConnect(netx_t * psC) {
 	}
 	mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd,
 			mbedtls_net_send, mbedtls_net_recv, NULL);
-	if (iRV != 0) {
-		return xNetSyslog(psC, __FUNCTION__, iRV);
-	} else {
-		psC->error = 0;
-	}
-	if (debugTRACK && psC->d.sec)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__, iRV);
+	else psC->error = 0;
+	if (debugTRACK && psC->d.sec) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -499,25 +487,20 @@ int	xNetOpen(netx_t * psC) {
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
-		if (iRV != erSUCCESS) {
-			vNetMbedDeInit(psC);
-			return iRV;
-		}
+		if (iRV != erSUCCESS) { vNetMbedDeInit(psC); return iRV; }
 	}
 
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psC->pHost) {							// Client type connection ?
 		iRV = xNetGetHost(psC);
-		if (iRV < erSUCCESS)
-			return iRV;
+		if (iRV < erSUCCESS) return iRV;
 	} else {
 		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psC);
-	if (iRV < erSUCCESS)
-		return iRV;
+	if (iRV < erSUCCESS) return iRV;
 	#if	(netxBUILD_SPC == 1)
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
@@ -529,16 +512,13 @@ int	xNetOpen(netx_t * psC) {
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
-	if (iRV < erSUCCESS)
-		return iRV;
+	if (iRV < erSUCCESS) return iRV;
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePostConnect(psC);
-		if (iRV < erSUCCESS)
-			return iRV;
+		if (iRV < erSUCCESS) return iRV;
 	}
-	if (debugTRACK && psC->d.o)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (debugTRACK && psC->d.o) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -554,19 +534,15 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psServCtx) && halCONFIG_inSRAM(psClntCtx));
 	// Set host/server RX timeout
 	int iRV = xNetSetRecvTO(psServCtx, mSecTime);
-	if (iRV < 0)
-		return iRV;
+	if (iRV < 0) return iRV;
 	memset(psClntCtx, 0, sizeof(netx_t));		// clear the client context
 	socklen_t len = sizeof(struct sockaddr_in);
 
 	/* Also need to consider adding a loop to repeat the accept()
 	 * in case of EAGAIN or POOL_IS_EMPTY errors */
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
-	if (iRV == erFAILURE) {
-		return xNetSyslog(psServCtx, __FUNCTION__, errno);
-	} else {
-		psServCtx->error = 0;
-	}
+	if (iRV == erFAILURE) return xNetSyslog(psServCtx, __FUNCTION__, errno);
+	else psServCtx->error = 0;
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
 	psClntCtx->sd		= iRV;
@@ -589,8 +565,7 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && Flag < selFLAG_NUM);
 	// If the timeout is too short dont select() just simulate 1 socket ready...
-	if (psC->tOut <= configXNET_MIN_TIMEOUT)
-		return 1;
+	if (psC->tOut <= configXNET_MIN_TIMEOUT) return 1;
 	// Need to add code here to accommodate LwIP & OpenSSL for ESP32
 	fd_set	fdsSet;
 	FD_ZERO(&fdsSet);
@@ -603,15 +578,11 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	int iRV = select(psC->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
 									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
 									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
-	if (iRV < erSUCCESS) {
-		return xNetSyslog(psC, __FUNCTION__, errno);
-	} else {
-		psC->error = 0;
-	}
-	if (debugTRACK && psC->d.s)
-		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
-							Flag == selFLAG_WRITE ? "write/select" :
-							Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
+	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
+	else psC->error = 0;
+	if (debugTRACK && psC->d.s) xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
+													Flag == selFLAG_WRITE ? "write/select" :
+													Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
 	return iRV;
 }
 
@@ -624,16 +595,14 @@ int	xNetClose(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int	iRV = erSUCCESS;
 	if (psC->sd != -1) {
-		if (debugTRACK && psC->d.cl)
-			xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
+		if (debugTRACK && psC->d.cl) xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
 		if (psC->psSec) {
 			mbedtls_ssl_close_notify(&psC->psSec->ssl);
 			vNetMbedDeInit(psC);
 		}
 		iRV = close(psC->sd);
 		psC->sd = -1;								// mark as closed
-		if (debugTRACK && psC->d.cl)
-			xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
+		if (debugTRACK && psC->d.cl) xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
 	}
 	return iRV;
 }
@@ -655,20 +624,13 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	if (psC->psSec) {
 		iRV = mbedtls_ssl_write(&psC->psSec->ssl, (unsigned char *) pBuf, xLen);
 	} else {
-		if (psC->pHost) {
-			iRV = send(psC->sd, pBuf, xLen, psC->flags);
-		} else {
-			iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
-		}
+		if (psC->pHost) iRV = send(psC->sd, pBuf, xLen, psC->flags);
+		else iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
 	}
-	if (iRV < erSUCCESS) {
-		return xNetSyslog(psC, __FUNCTION__, errno);
-	} else {
-		psC->error = 0;
-	}
+	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
+	else psC->error = 0;
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
-	if (debugTRACK && psC->d.w)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugTRACK && psC->d.w)	xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
