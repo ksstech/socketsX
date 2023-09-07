@@ -387,6 +387,7 @@ static int xNetConnect(netx_t * psC) {
  */
 int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
+	if (psC->tOut == mSecTime) return erSUCCESS;		// nothing to do, already correct
 	psC->tOut = mSecTime;
 	int iRV;
 	if (mSecTime <= flagXNET_NONBLOCK) {
