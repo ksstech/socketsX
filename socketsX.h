@@ -158,7 +158,6 @@ typedef union netx_dbg_u netx_dbg_t;
 
 void xNetRestartStack( void );
 EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks);
-int	xNetReport(report_t * psR, netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen);
 int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime);
 int	xNetSelect(netx_t * psConn, u8_t Flag);
 int	xNetOpen(netx_t * psConn);
@@ -175,7 +174,10 @@ int	xNetSendUBuf(netx_t *, ubuf_t *, u32_t);
 int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
 
 int	xNetClose(netx_t * psConn);
-void xNetReportStats(report_t * psR);
+
+struct report_t;
+int	xNetReport(struct report_t * psR, netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen);
+void xNetReportStats(struct report_t * psR);
 
 #ifdef __cplusplus
 }

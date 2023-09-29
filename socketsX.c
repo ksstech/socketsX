@@ -758,8 +758,7 @@ void xNetReportStats(report_t * psR) {
 	    socklen_t addr_size = sizeof(addr);
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
-	    if (res == 0)
-	    	wprintfx(psR, "sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port);
+	    if (res == 0) wprintfx(psR, "sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port);
 	}
 	wprintfx(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
