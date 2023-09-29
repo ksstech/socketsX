@@ -148,7 +148,7 @@ static int xNetMbedInit(netx_t * psC) {
 
 	char random_key[xpfMAX_LEN_X64];
 	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime);
-#if 1
+#if (buildNEW_CODE == 1)
 	char * pcName = NULL;
 	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV);
 	if (iRV == erSUCCESS) {
