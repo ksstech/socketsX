@@ -54,22 +54,18 @@
  *		https://github.com/espressif/esp-idf/issues/2540
  */
 
-EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks) {
-	#define xnetSTEP	10
-	#define xnetROUND	(xnetSTEP / 2)
-	xTicks = (xTicks < xnetSTEP) ? xnetSTEP :
-			(xTicks == portMAX_DELAY) ? portMAX_DELAY :
-			(xTicks + xnetROUND) % xnetSTEP;
+EventBits_t xNetWaitLx(EventBits_t ReqBits, u32_t ttWait) {
+	#define xnetSTEP	pdMS_TO_TICKS(10)
+	if (ttWait == portMAX_DELAY) ttWait = portMAX_DELAY;				// forget about mS, max ticks!
+	else if (pdMS_TO_TICKS(ttWait) <= xnetSTEP) ttWait = xnetSTEP;
+	else ttWait = u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
 	do {
-		EventBits_t CurBits = xRtosWaitStatusANY(ReqBits, xnetSTEP);
-		if ((CurBits & flagLX_STA) == flagLX_STA)
-			return flagLX_STA;
-		if ((CurBits & flagLX_SAP) == flagLX_SAP)
-			return flagLX_SAP;
-		if (xTicks != portMAX_DELAY)
-			xTicks -= xnetSTEP;
-//		IF_CP(debugTIMING, "Step=%lu", xTicks);
-	} while (xTicks);
+		EventBits_t CurBits = xRtosGetStatus(ReqBits);
+		if ((CurBits & flagLX_STA) == flagLX_STA) return flagLX_STA;
+		if ((CurBits & (flagL1|flagL2_SAP)) == (flagL1|flagL2_SAP)) return flagLX_SAP;
+		vTaskDelay(xnetSTEP);
+		if (ttWait != portMAX_DELAY) ttWait -= xnetSTEP;
+	} while (ttWait);
 	return 0;
 }
 
