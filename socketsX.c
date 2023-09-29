@@ -3,12 +3,13 @@
  * Copyright (c) 2014-22 Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
-#include "hal_variables.h"
-
+#include "hal_config.h"
+#include "hal_options.h"
 #include "socketsX.h"
 #include "printfx.h"									// +x_definitions +stdarg +stdint +stdio
 #include "syslog.h"
 #include "systiming.h"
+#include "x_utilities.h"
 #include "x_errors_events.h"
 
 #ifdef	CONFIG_MBEDTLS_DEBUG
@@ -104,8 +105,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		int Level = psC->d.sl ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d err=%d (%s)", psC->pHost, ntohs(psC->sa_in.sin_port), eCode, pcMess);
 	}
-	if (fAlloc)
-		vRtosFree(pcMess);
+	if (fAlloc) vRtosFree(pcMess);
 	// Under certain conditions we can close the socket automatically
 //	if (psC->error == ENOTCONN) xNetClose(psC);
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
@@ -115,8 +115,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
-	if (level == 4)
-		printfx("%d:%s  ", line, file);
+	if (level == 4) printfx("%d:%s  ", line, file);
 	printfx("L=%d  %s\r\n", level, str );
 }
 
@@ -130,9 +129,8 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 	pc_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE);
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
 	printfx(pBuf);
-	if (*flags == 0) {
-		printfx("xNetMbedVerify: No verification issue for this certificate\r\n");
-	} else {
+	if (*flags == 0) printfx("xNetMbedVerify: No verification issue for this certificate\r\n");
+	else {
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
 		printfx("xNetMbedVerify: %s\r\n", pBuf);
 	}
@@ -243,8 +241,7 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 	wprintfx(psR, "TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
 			psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
-	if (psC->d.d && pBuf && xLen)
-		wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
+	if (psC->d.d && pBuf && xLen) wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
 	printfx_unlock(psR);
 	return erSUCCESS;
 }
@@ -253,8 +250,7 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
-	if (xNetWaitLx(flagLX_STA, pdMS_TO_TICKS(10000)) != flagLX_STA)
-		return erFAILURE;
+	if (xNetWaitLx(flagLX_STA, pdMS_TO_TICKS(10000)) != flagLX_STA) return erFAILURE;
 	#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	struct addrinfo * psAI;
 	struct addrinfo sAI;
@@ -264,16 +260,13 @@ static int xNetGetHost(netx_t * psC) {
 	char portnum[16];
 	snprintf(portnum, sizeof(portnum), "%d", ntohs(psC->sa_in.sin_port));
 	int iRV = getaddrinfo(psC->pHost, portnum, &sAI, &psAI);
-	if (iRV != erSUCCESS || psAI == NULL) {
-		iRV = xNetSyslog(psC, __FUNCTION__, errno);
-	} else {
+	if (iRV != erSUCCESS || psAI == NULL) iRV = xNetSyslog(psC, __FUNCTION__, errno);
+	else {
 		struct sockaddr_in * sa_in = (struct sockaddr_in *) psAI->ai_addr;
 		psC->sa_in.sin_addr.s_addr = sa_in->sin_addr.s_addr;
-		if (debugTRACK && psC->d.h)
-			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
+		if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	}
-	if (psAI != NULL)
-		freeaddrinfo(psAI);
+	if (psAI != NULL) freeaddrinfo(psAI);
 	return iRV;
 	#elif (OPT_RESOLVE == 2)			// [lwip_]gethostbyname()	UNRELIABLE
 
@@ -353,13 +346,10 @@ static int xNetSocket(netx_t * psC)  {
 	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
-	if (iRV < erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, errno);
+	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
 	psC->sd = (i16_t) iRV;
-	if (psC->psSec)
-		psC->psSec->server_fd.fd = iRV;
-	if (debugTRACK && psC->d.o)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (psC->psSec) psC->psSec->server_fd.fd = iRV;
+	if (debugTRACK && psC->d.o) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -372,10 +362,8 @@ int xNetSecurePreConnect(netx_t * psC) { return 0; }
 static int xNetConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
-  	if (iRV != erSUCCESS)
-  		return xNetSyslog(psC, __FUNCTION__, errno);
-	if (debugTRACK && psC->d.h)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+  	if (iRV != erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
+	if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -657,14 +645,10 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 		}
 	}
-	if (iRV < erSUCCESS) {
-		return xNetSyslog(psC, __FUNCTION__, errno);
-	} else {
-		psC->error = 0;
-	}
+	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
+	else psC->error = 0;
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
-	if (debugTRACK && psC->d.r)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugTRACK && psC->d.r) xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
@@ -685,18 +669,12 @@ int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	mSecTime = xNetAdjustTimeout(psC, mSecTime);
 	do {
 		iRV = xNetSelect(psC, selFLAG_WRITE);
-		if (iRV < 0)
-			break;
-		if (iRV == 0)
-			continue;						// try again
+		if (iRV < 0) break;
+		if (iRV == 0) continue;						// try again
 		iRV = xNetSend(psC, pBuf + xLenDone, xLen - xLenDone);
-		if (iRV > -1) {
-			xLenDone += iRV;
-		} else if (psC->error == EAGAIN) {
-			continue;
-		} else {
-			break;
-		}
+		if (iRV > -1) xLenDone += iRV;
+		else if (psC->error == EAGAIN) continue;
+		else break;
 	} while((++psC->trynow < psC->trymax) && (xLenDone < xLen));
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
@@ -717,13 +695,9 @@ int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	int	iRV, xLenDone = 0;
 	do {
 		iRV = xNetRecv(psC, pBuf + xLenDone, xLen - xLenDone);
-		if (iRV > -1) {
-			xLenDone +=	iRV;
-		} else if (psC->error == EAGAIN) {
-			continue;
-		} else {
-			break;
-		}
+		if (iRV > -1) xLenDone +=	iRV;
+		else if (psC->error == EAGAIN) continue;
+		else break;
  	} while ((++psC->trynow < psC->trymax) && (xLenDone < xLen));
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
