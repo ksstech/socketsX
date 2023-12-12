@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-23 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
+ * socketsX.h - Copyright 2014-23 (c) Andre M. Maree / KSS Technologies (Pty) Ltd.
  */
 
 #pragma once
@@ -19,7 +19,7 @@
 #include "mbedtls/error.h"
 #include "esp_crt_bundle.h"
 
-#include "x_ubuf.h"				// FreeRTOS_Support
+#include "x_ubuf.h"
 
 #ifdef __cplusplus
 extern "C" {
