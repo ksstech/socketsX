@@ -134,7 +134,7 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 
 static int xNetMbedInit(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC->psSec));
-	IF_myASSERT(debugPARAM, INRANGE_FLASH(psC->psSec->pcCert) > 0);
+	IF_myASSERT(debugPARAM, halCONFIG_inMEM(psC->psSec->pcCert));
 	IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1);
 
 	mbedtls_net_init(&psC->psSec->server_fd);
