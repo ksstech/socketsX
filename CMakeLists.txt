@@ -2,8 +2,8 @@
 set( srcs "socketsX.c" )
 set( include_dirs "." )
 set( priv_include_dirs )
-set( requires "buffers hal_esp32 mbedtls esp_netif" )
-set( priv_requires "printfx syslog systiming")
+set( requires "main mbedtls esp_netif" )
+set( priv_requires )
 
 idf_component_register(
 	SRCS ${srcs}
