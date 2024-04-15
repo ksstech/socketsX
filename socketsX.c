@@ -33,27 +33,8 @@
 #define xnetSTEP					pdMS_TO_TICKS(10)
 
 // ######################################## Local constants ########################################
-
-
-// ####################################### Private variables ########################################
-
-
+// ####################################### Private variables #######################################
 // ###################################### Local only functions #####################################
-
-/* The problem with printfx() or any of the variants are
- * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
- * b) and the network connection is dropped; then
- * c) the detection of the socket being closed (or other error)
- * 	will cause the system to want to send more data to the (closed) socket.....
- * In order to avoid recursing back into syslog in cases of network errors
- * encountered in the syslog connection, we check on the d.sl flag.
- * If set we change the severity to ONLY go to the console and
- * not attempt to go out the network, which would bring it back here
- *
- * Graceful close (unexpected) returns 0 but sets errno to 128
- * errno = 128 NOT defined in errno.h
- *		https://github.com/espressif/esp-idf/issues/2540
- */
 
 EventBits_t xNetWaitLx(TickType_t ttWait) {
 	if (ttWait != portMAX_DELAY) {
@@ -97,6 +78,20 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		#endif
 	}
 	if (debugTRACK && (psC->d.ea || eCode != EAGAIN)) {
+		/* The problem with printfx() or any of the variants are
+		 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
+		 * b) and the network connection is dropped; then
+		 * c) the detection of the socket being closed (or other error)
+		 * 	will cause the system to want to send more data to the (closed) socket.....
+		 * In order to avoid recursing back into syslog in cases of network errors
+		 * encountered in the syslog connection, we check on the d.sl flag.
+		 * If set we change the severity to ONLY go to the console and
+		 * not attempt to go out the network, which would bring it back here
+		 *
+		 * Graceful close (unexpected) returns 0 but sets errno to 128
+		 * errno = 128 NOT defined in errno.h
+		 *		https://github.com/espressif/esp-idf/issues/2540
+		 */
 		// to ensure that Syslog related errors does not get logged again, lift the level
 		int Level = psC->d.sl ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d err=%d (%s)", psC->pHost, ntohs(psC->sa_in.sin_port), eCode, pcMess);
