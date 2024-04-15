@@ -29,6 +29,8 @@
 // ######################################## Build macros ###########################################
 
 #define	xnetBUFFER_SIZE 			1024
+#define	xnetMS_GETHOST				10000
+#define xnetSTEP					pdMS_TO_TICKS(10)
 
 // ######################################## Local constants ########################################
 
@@ -53,11 +55,11 @@
  *		https://github.com/espressif/esp-idf/issues/2540
  */
 
-EventBits_t xNetWaitLx(EventBits_t ReqBits, u32_t ttWait) {
-	#define xnetSTEP	pdMS_TO_TICKS(10)
-	if (ttWait == portMAX_DELAY) ttWait = portMAX_DELAY;				// forget about mS, max ticks!
-	else if (pdMS_TO_TICKS(ttWait) <= xnetSTEP) ttWait = xnetSTEP;
-	else ttWait = u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
+EventBits_t xNetWaitLx(TickType_t ttWait) {
+	if (ttWait != portMAX_DELAY) {
+		if (pdMS_TO_TICKS(ttWait) <= xnetSTEP) ttWait = xnetSTEP;
+		else ttWait = u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
+	}
 	do {
 		if (xRtosCheckStatus(flagLX_STA)) return flagLX_STA;
 		if (xRtosCheckStatus(flagL1|flagL2_SAP)) return flagLX_SAP;
@@ -244,7 +246,7 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
-	if (xNetWaitLx(flagLX_STA, pdMS_TO_TICKS(10000)) != flagLX_STA) return erFAILURE;
+	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA) return erFAILURE;
 	#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	struct addrinfo * psAI;
 	struct addrinfo sAI;
@@ -464,7 +466,7 @@ int	xNetSecurePostConnect(netx_t * psC) {
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int	iRV;
-	EventBits_t ebX = xNetWaitLx(flagLX_ANY, pdMS_TO_TICKS(10000));
+	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(10000));
 	if (ebX != flagLX_STA && ebX != flagLX_SAP)
 		return erFAILURE;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
