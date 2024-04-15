@@ -157,7 +157,7 @@ typedef union netx_dbg_u netx_dbg_t;
 // ####################################### Global Functions ########################################
 
 void xNetRestartStack( void );
-EventBits_t xNetWaitLx(EventBits_t ReqBits, TickType_t xTicks);
+EventBits_t xNetWaitLx(TickType_t xTicks);
 int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime);
 int	xNetSelect(netx_t * psConn, u8_t Flag);
 int	xNetOpen(netx_t * psConn);
