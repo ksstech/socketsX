@@ -83,7 +83,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
 			psC->error = EAGAIN;
 		} else {
-			pcMess = pvRtosMalloc(xnetBUFFER_SIZE);
+			pcMess = malloc(xnetBUFFER_SIZE);
 			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
 			fAlloc = 1;
 		}
@@ -99,7 +99,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		int Level = psC->d.sl ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d err=%d (%s)", psC->pHost, ntohs(psC->sa_in.sin_port), eCode, pcMess);
 	}
-	if (fAlloc) vRtosFree(pcMess);
+	if (fAlloc) free(pcMess);
 	// Under certain conditions we can close the socket automatically
 //	if (psC->error == ENOTCONN) xNetClose(psC);
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
@@ -120,7 +120,7 @@ void vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
 static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *flags) {
 	(void) data;
 	printfx("xNetMbedVerify: Verifying certificate at depth %d:\r\n", depth);
-	pc_t pBuf = pvRtosMalloc(xnetBUFFER_SIZE);
+	pc_t pBuf = malloc(xnetBUFFER_SIZE);
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
 	printfx(pBuf);
 	if (*flags == 0) printfx("xNetMbedVerify: No verification issue for this certificate\r\n");
@@ -128,7 +128,7 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
 		printfx("xNetMbedVerify: %s\r\n", pBuf);
 	}
-	vRtosFree(pBuf);
+	free(pBuf);
 	return 0;
 }
 
