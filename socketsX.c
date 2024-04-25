@@ -1,6 +1,4 @@
-/*
- * socketsX.c - Copyright (c) 2014-24 Andre M. Maree / KSS Technologies (Pty) Ltd.
- */
+// socketsX.c - Copyright (c) 2014-24 Andre M. Maree / KSS Technologies (Pty) Ltd.
 
 #include "hal_platform.h"
 #include "hal_options.h"
@@ -91,16 +89,17 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		 * Graceful close (unexpected) returns 0 but sets errno to 128
 		 * errno = 128 NOT defined in errno.h
 		 *		https://github.com/espressif/esp-idf/issues/2540
+		 * Hence, to ensure Syslog related errors does not get logged, lift the level
 		 */
-		// to ensure that Syslog related errors does not get logged again, lift the level
 		int Level = psC->d.sl ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d err=%d (%s)", psC->pHost, ntohs(psC->sa_in.sin_port), eCode, pcMess);
 	}
 	if (fAlloc) free(pcMess);
 	// Under certain conditions we can close the socket automatically
-//	if (psC->error == ENOTCONN) xNetClose(psC);
 	/* XXX: strange & need further investigation, does not make sense. Specifically done to
-	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE; */
+	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE; 
+	 *	if (psC->error == ENOTCONN) xNetClose(psC);
+	 */
 	return psC->error ? erFAILURE : erSUCCESS;
 }
 
@@ -604,13 +603,20 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	if (psC->psSec) {
 		iRV = mbedtls_ssl_write(&psC->psSec->ssl, (unsigned char *) pBuf, xLen);
 	} else {
-		if (psC->pHost) iRV = send(psC->sd, pBuf, xLen, psC->flags);
-		else iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
+		if (psC->pHost) {
+			iRV = send(psC->sd, pBuf, xLen, psC->flags);
+		} else {
+			iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
+		}
 	}
-	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
-	else psC->error = 0;
+	if (iRV < erSUCCESS) {
+		return xNetSyslog(psC, __FUNCTION__, errno);
+	} else {
+		psC->error = 0;
+	}
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
-	if (debugTRACK && psC->d.w)	xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugTRACK && psC->d.w)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
@@ -636,10 +642,14 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 		}
 	}
-	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, errno);
-	else psC->error = 0;
+	if (iRV < erSUCCESS) {
+		return xNetSyslog(psC, __FUNCTION__, errno);
+	} else{
+		psC->error = 0;
+	}
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
-	if (debugTRACK && psC->d.r) xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugTRACK && psC->d.r)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
