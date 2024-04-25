@@ -58,9 +58,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	psC->error = eCode;
 	bool fAlloc = 0;
 	char * pcMess = NULL;
-	 // Lowest	: MBEDTLS_ERR_SSL_HW_ACCEL_FAILED  			-0x7F80
-	 // Highest	: MBEDTLS_ERR_PEM_NO_HEADER_FOOTER_PRESENT	-0x1080
-	if (INRANGE(-0x7F80, eCode, -0x1080)) {
+	if (INRANGE(mbedERROR_SMALLEST, eCode, mbedERROR_BIGGEST)) {
 		if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
 			psC->error = EAGAIN;
 		} else {
