@@ -73,7 +73,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		pcMess = (char *) strerror(eCode);
 		#endif
 	}
-	if (debugTRACK && (psC->d.ea || eCode != EAGAIN)) {
+	if (eCode != ENOTCONN && (psC->d.ea || eCode != EAGAIN)) {
 		/* The problem with printfx() or any of the variants are
 		 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
 		 * b) and the network connection is dropped; then
