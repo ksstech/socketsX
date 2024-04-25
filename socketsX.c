@@ -187,7 +187,7 @@ static void vNetMbedDeInit(netx_t * psC) {
 }
 
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	printfx_lock(psR);
+	WPFX_LOCK(psR);
 	wprintfx(psR, "%C%-s%C\t%s  %s://%-I:%d ", colourFG_CYAN, pFname, attrRESET,
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
@@ -197,8 +197,10 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 	wprintfx(psR, "TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
 			psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
-	if (psC->d.d && pBuf && xLen) wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
-	printfx_unlock(psR);
+	if (psC->d.d && pBuf && xLen)
+		wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
+	WPFX_UNLOCK(psR);
+	wprintfx(psR, psR->sFM.aNL ? strCRLF : NULL);
 	return erSUCCESS;
 }
 
