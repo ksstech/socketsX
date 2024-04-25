@@ -140,7 +140,6 @@ static int xNetMbedInit(netx_t * psC) {
 
 	char random_key[xpfMAX_LEN_X64];
 	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime);
-#if (buildNEW_CODE == 1)
 	char * pcName = NULL;
 	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV);
 	if (iRV == erSUCCESS) {
@@ -176,37 +175,6 @@ static int xNetMbedInit(netx_t * psC) {
 	if (iRV != erSUCCESS || pcName)
 		return xNetSyslog(psC, pcName, iRV);
  	return iRV;
-#else
-	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV);
-	if (iRV != erSUCCESS)
-		return xNetSyslog(psC, "mbedtls_ctr_drbg_seed", iRV);
-	if (psC->psSec->pcCert) {			// use provided certificate
-		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, psC->psSec->pcCert, psC->psSec->szCert);
-	} else {							// use default certificate list
-		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) mbedtls_test_cas_pem, mbedtls_test_cas_pem_len);
-	}
-	if (iRV != erSUCCESS)
-		return xNetSyslog(psC, "mbedtls_x509_crt_parse", iRV);
-	iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
-			(psC->pHost == 0)			? MBEDTLS_SSL_IS_SERVER			: MBEDTLS_SSL_IS_CLIENT,
-			(psC->type == SOCK_STREAM)	? MBEDTLS_SSL_TRANSPORT_STREAM	: MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-			MBEDTLS_SSL_PRESET_DEFAULT);
-	if (iRV != erSUCCESS)
-		return xNetSyslog(psC, "mbedtls_ssl_config_defaults", iRV);
-	iRV = mbedtls_ssl_setup( &psC->psSec->ssl, &psC->psSec->conf);
-	if (iRV != erSUCCESS)
-		return xNetSyslog(psC, "mbedtls_ssl_setup", iRV);
-	mbedtls_ssl_conf_ca_chain(&psC->psSec->conf, &psC->psSec->cacert, NULL);
-	mbedtls_ssl_conf_rng( &psC->psSec->conf, mbedtls_ctr_drbg_random, &psC->psSec->ctr_drbg );
-
-	#if	(CONFIG_MBEDTLS_DEBUG > 0)
-	if (debugTRACK && psC->d.sec) {
-		mbedtls_debug_set_threshold(psC->d.d.lvl + 1);
-		mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
-	}
-	#endif
- 	return iRV;
-#endif
 }
 
 static void vNetMbedDeInit(netx_t * psC) {
