@@ -1,6 +1,7 @@
 // socketsX.c - Copyright (c) 2014-24 Andre M. Maree / KSS Technologies (Pty) Ltd.
 
 #include "hal_platform.h"
+#include "hal_memory.h"
 #include "hal_options.h"
 #include "socketsX.h"
 #include "printfx.h"									// +x_definitions +stdarg +stdint +stdio
@@ -608,7 +609,7 @@ int	xNetClose(netx_t * psC) {
  */
 int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inMEM(pBuf) &&  xLen > 0);
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halMEM_AddrInANY(pBuf) &&  xLen > 0);
 	int iRV;
 	if (psC->psSec) {
 		iRV = mbedtls_ssl_write(&psC->psSec->ssl, (unsigned char *) pBuf, xLen);
@@ -667,7 +668,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
  * @return	number of bytes written (ie < erSUCCESS indicates error code)
  */
 int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inMEM(pBuf) && xLen > 0);
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halMEM_AddrInANY(pBuf) && xLen > 0);
 	int	iRV, xLenDone = 0;
 	mSecTime = xNetAdjustTimeout(psC, mSecTime);
 	do {
