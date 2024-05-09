@@ -104,9 +104,9 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
-	printfx("L=%d  %s\r\n", level, str );
 	if (level == 4)
 		wprintfx(NULL, "%d:%s  ", line, file);
+	wprintfx(NULL, "L=%d  %s\r\n", level, str );
 }
 
 /**
@@ -201,21 +201,18 @@ static void vNetMbedDeInit(netx_t * psC) {
  * @note	DOES lock/unlock console UART
 */
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	WPFX_LOCK(psR);
-	wprintfx(psR, "%C%-s%C\t%s  %s://%-I:%d ", colourFG_CYAN, pFname, attrRESET,
+	int iRV = wprintfx(psR, "%C%-s%C\t%s  %s://%-I:%d (%s)  sd=%d  %s=%d  Try=%d/%d  TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
+			 xpfSGR(0,0,colourFG_CYAN,0), pFname, xpfSGR(0,0,attrRESET,0),
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
-			ntohl(psC->sa_in.sin_addr.s_addr), ntohs(psC->sa_in.sin_port));
-	wprintfx(psR, "(%s)  sd=%d  %s=%d  Try=%d/%d  ", psC->pHost, psC->sd,
-			Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV", Code, psC->trynow, psC->trymax);
-	wprintfx(psR, "TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
-			psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
+			ntohl(psC->sa_in.sin_addr.s_addr), ntohs(psC->sa_in.sin_port), psC->pHost, psC->sd,
+			Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV", Code, psC->trynow,
+			psC->trymax, psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen)
-		wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
-	WPFX_UNLOCK(psR);
-	wprintfx(psR, psR->sFM.aNL ? strCRLF : NULL);
-	return erSUCCESS;
+		iRV += wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
+	iRV += wprintfx(psR, repFORM_TST(psR,aNL) ? strCRLF : NULL);
+	return iRV;
 }
 
 #define OPT_RESOLVE					1
@@ -231,7 +228,7 @@ static int xNetGetHost(netx_t * psC) {
 	sAI.ai_family = psC->sa_in.sin_family;
 	sAI.ai_socktype = psC->type;
 	char portnum[16];
-	snprintf(portnum, sizeof(portnum), "%d", ntohs(psC->sa_in.sin_port));
+	snprintfx(portnum, sizeof(portnum), "%d", ntohs(psC->sa_in.sin_port));
 	int iRV = getaddrinfo(psC->pHost, portnum, &sAI, &psAI);
 	if (iRV != erSUCCESS || psAI == NULL) {
 		iRV = xNetSyslog(psC, __FUNCTION__, errno);
@@ -251,12 +248,12 @@ static int xNetGetHost(netx_t * psC) {
 	int iRV = erSUCCESS;
 	struct hostent * psHE = gethostbyname(psC->pHost);
 //	P("Host=:%s  psHE=%p\r\n", psC->pHost, psHE);
-//	IF_P(psHE, "Name=%s\r\n", psHE->h_name);
-//	IF_P(psHE, "Type=%d\r\n", psHE->h_addrtype);
-//	IF_P(psHE, "Len=%d\r\n", psHE->h_length);
-//	IF_P(psHE, "List=%p\r\n", psHE->h_addr_list);
-//	IF_P(psHE && psHE->h_addr_list, "List[0]=%p\r\n", psHE->h_addr_list[0]);
-//	IF_P(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I\r\n", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
+//	IF_PX(psHE, "Name=%s\r\n", psHE->h_name);
+//	IF_PX(psHE, "Type=%d\r\n", psHE->h_addrtype);
+//	IF_PX(psHE, "Len=%d\r\n", psHE->h_length);
+//	IF_PX(psHE, "List=%p\r\n", psHE->h_addr_list);
+//	IF_PX(psHE && psHE->h_addr_list, "List[0]=%p\r\n", psHE->h_addr_list[0]);
+//	IF_PX(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I\r\n", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
 	if ((psHE == NULL) || (psHE->h_addrtype != AF_INET) ||
 		(psHE->h_addr_list == NULL) || (psHE->h_addr_list[0] == NULL)) {
 		iRV = xNetSyslog(psC, __FUNCTION__, h_errno);
@@ -286,10 +283,10 @@ static int xNetGetHost(netx_t * psC) {
 	if (psAI || psHE == NULL) {
 		iRV = xNetSyslog(psC, __FUNCTION__, psAI);
 	} else {
-		IF_P(psHE, "Name=%s  Type=%d  Len=%d  List=%p",
+		IF_PX(psHE, "Name=%s  Type=%d  Len=%d  List=%p",
 				psHE->h_name, psHE->h_addrtype, psHE->h_length, psHE->h_addr_list);
-		IF_P(psHE && psHE->h_addr_list, "  List[0]=%p", psHE->h_addr_list[0]);
-		IF_P(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "  Addr[0]=%-#I", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
+		IF_PX(psHE && psHE->h_addr_list, "  List[0]=%p", psHE->h_addr_list[0]);
+		IF_PX(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "  Addr[0]=%-#I", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
 		P(strCRLF);
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
 		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
