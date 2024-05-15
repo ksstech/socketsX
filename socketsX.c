@@ -2,6 +2,7 @@
 
 #include "hal_platform.h"
 #include "hal_memory.h"
+#include "hal_network.h"								// Station IP address
 #include "hal_options.h"
 #include "socketsX.h"
 #include "printfx.h"									// +x_definitions +stdarg +stdint +stdio
@@ -75,6 +76,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	#endif
 	}
 	if (eCode != ENOTCONN && (psC->d.ea || eCode != EAGAIN)) {
+		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
 		/* The problem with printfx() or any of the variants are
 		 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
 		 * b) and the network connection is dropped; then
@@ -91,7 +93,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		 * Hence, to ensure Syslog related errors does not get logged, lift the level
 		 */
 		int Level = psC->d.sl ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
-		vSyslog(Level, pFname, "%s:%d err=%d (%s)", psC->pHost, ntohs(psC->sa_in.sin_port), eCode, pcMess);
+		vSyslog(Level, pFname, "%s:%d err=%d (%s)", pHost, ntohs(psC->sa_in.sin_port), eCode, pcMess);
 	}
 	if (fAlloc)
 		free(pcMess);
@@ -202,11 +204,13 @@ static void vNetMbedDeInit(netx_t * psC) {
  * @note	DOES lock/unlock console UART
 */
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	int iRV = wprintfx(psR, "%C%-s%C\t%s  %s://%-I:%d (%s)  sd=%d  %s=%d  Try=%d/%d  TO=%d%s  D=0x%02X  F=0x%X  E=%d\r\n",
+	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
+	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
+	int iRV = wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d\r\n",
 			 xpfSGR(0,0,colourFG_CYAN,0), pFname, xpfSGR(0,0,attrRESET,0),
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
-			ntohl(psC->sa_in.sin_addr.s_addr), ntohs(psC->sa_in.sin_port), psC->pHost, psC->sd,
+			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
 			Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV", Code, psC->trynow,
 			psC->trymax, psC->tOut, psC->tOut == 0 ? "(BLK)" : psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
