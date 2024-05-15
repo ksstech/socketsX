@@ -232,7 +232,7 @@ static int xNetGetHost(netx_t * psC) {
 	snprintfx(portnum, sizeof(portnum), "%d", ntohs(psC->sa_in.sin_port));
 	int iRV = getaddrinfo(psC->pHost, portnum, &sAI, &psAI);
 	if (iRV != erSUCCESS || psAI == NULL) {
-		iRV = xNetSyslog(psC, __FUNCTION__, errno);
+		iRV = xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	} else {
 		struct sockaddr_in * sa_in = (struct sockaddr_in *) psAI->ai_addr;
 		psC->sa_in.sin_addr.s_addr = sa_in->sin_addr.s_addr;
@@ -309,7 +309,7 @@ static int xNetGetHost(netx_t * psC) {
 			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	} else {
 		TRACK();
-		iRV = xNetSyslog(psC, __FUNCTION__, errno);
+		iRV = xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	}
 	return iRV;
 	#endif
@@ -321,7 +321,7 @@ static int xNetSocket(netx_t * psC)  {
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
 	if (iRV < erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, errno);
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	psC->sd = (i16_t) iRV;
 	if (psC->psSec)
 		psC->psSec->server_fd.fd = iRV;
@@ -340,7 +340,7 @@ static int xNetConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
   	if (iRV != erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, errno);
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	if (debugTRACK && psC->d.h)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
@@ -354,6 +354,7 @@ static int xNetConnect(netx_t * psC) {
  */
 int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
+	psC->error = 0;
 	if (psC->tOut == mSecTime)
 		return erSUCCESS;								// nothing to do, already correct
 	psC->tOut = mSecTime;
@@ -373,8 +374,8 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 			myASSERT(tOut == mSecTime);
 		}*/
 	}
-	if (iRV != 0)
-		return xNetSyslog(psC, __FUNCTION__, iRV);
+	if (iRV == -1)
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	if (debugTRACK && psC->d.t)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
@@ -422,7 +423,7 @@ int	xNetBindListen(netx_t * psC) {
 			iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
 	}
 	if (iRV != erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, errno);
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	psC->error = 0;
 	if (debugTRACK && psC->d.bl)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
@@ -443,7 +444,7 @@ int	xNetSecurePostConnect(netx_t * psC) {
 	mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd,
 			mbedtls_net_send, mbedtls_net_recv, NULL);
 	if (iRV != 0)
-		return xNetSyslog(psC, __FUNCTION__, iRV);
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	psC->error = 0;
 	if (debugTRACK && psC->d.sec)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
@@ -534,7 +535,7 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	 * in case of EAGAIN or POOL_IS_EMPTY errors */
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
 	if (iRV == erFAILURE)
-		return xNetSyslog(psServCtx, __FUNCTION__, errno);
+		return xNetSyslog(psServCtx, __FUNCTION__, errno ? errno : iRV);
 	psServCtx->error = 0;
 	/* The server socket had flags set for BIND & LISTEN but the client
 	 * socket should just be connected and marked same type & flags */
@@ -573,7 +574,7 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
 									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
 	if (iRV < erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, errno);
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	psC->error = 0;
 	if (debugTRACK && psC->d.s) xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
 													Flag == selFLAG_WRITE ? "write/select" :
@@ -626,7 +627,7 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 		iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
 	}
 	if (iRV < erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, errno);
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	psC->error = 0;
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
 	if (debugTRACK && psC->d.w)
@@ -655,7 +656,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 		iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 	}
 	if (iRV < erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, errno);
+		return xNetSyslog(psC, __FUNCTION__, errno ? errno : iRV);
 	psC->error = 0;
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
 	if (debugTRACK && psC->d.r)
