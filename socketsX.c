@@ -63,6 +63,8 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	if (INRANGE(mbedERROR_SMALLEST, eCode, mbedERROR_BIGGEST)) {
 		if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
 			psC->error = EAGAIN;
+		} else if (eCode == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+			psC->error = ENOTCONN;
 		} else {
 			pcMess = malloc(xnetBUFFER_SIZE);
 			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
