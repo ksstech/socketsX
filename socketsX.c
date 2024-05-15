@@ -95,8 +95,8 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	}
 	if (fAlloc)
 		free(pcMess);
-	// Under certain conditions we can close the socket automatically
-	/* XXX: strange & need further investigation, does not make sense. Specifically done to
+	/* Under certain conditions we can close the socket automatically
+	 * XXX: strange & need further investigation, does not make sense. Specifically done to
 	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE; 
 	 *	if (psC->error == ENOTCONN) xNetClose(psC);
 	 */
@@ -208,7 +208,7 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(psC->sa_in.sin_addr.s_addr), ntohs(psC->sa_in.sin_port), psC->pHost, psC->sd,
 			Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV", Code, psC->trynow,
-			psC->trymax, psC->tOut, psC->tOut == 0 ? "(BLK)" :psC->tOut == 1 ? "(NB)" : "mSec",
+			psC->trymax, psC->tOut, psC->tOut == 0 ? "(BLK)" : psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen)
 		iRV += wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
@@ -459,8 +459,9 @@ int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int	iRV;
 	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(10000));
-	if (ebX != flagLX_STA && ebX != flagLX_SAP)
+	if (ebX != flagLX_STA && ebX != flagLX_SAP) {
 		return erFAILURE;
+	}
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
@@ -470,39 +471,45 @@ int	xNetOpen(netx_t * psC) {
 		}
 	}
 	// STEP 1: if connecting as client, resolve the host name & IP address
-	if (psC->pHost) {							// Client type connection ?
+	if (psC->pHost) {									// Client type connection ?
 		iRV = xNetGetHost(psC);
-		if (iRV < erSUCCESS)
+		if (iRV < erSUCCESS) {
 			return iRV;
+		}
 	} else {
 		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psC);
-	if (iRV < erSUCCESS)
+	if (iRV < erSUCCESS) {
 		return iRV;
+	}
 	#if	(netxBUILD_SPC == 1)
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePreConnect(psC);
-		if (iRV < erSUCCESS)
+		if (iRV < erSUCCESS) {
 			return iRV;
+		}
 	}
 	#endif
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
-	if (iRV < erSUCCESS)
+	if (iRV < erSUCCESS) {
 		return iRV;
+	}
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePostConnect(psC);
-		if (iRV < erSUCCESS)
+		if (iRV < erSUCCESS) {
 			return iRV;
+		}
 	}
-	if (debugTRACK && psC->d.o) 
+	if (debugTRACK && psC->d.o) {
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	}
 	return iRV;
 }
 
@@ -663,7 +670,6 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
  * @param	psC	pointer to connection context
  * @param	pBuf		pointer to the buffer to write from
  * @param	xLen		number of bytes in buffer to write
- * @param	i16Flags	flags as defined in socket.h
  * @param	mSecTime	number of milli-seconds to block
  * @return	number of bytes written (ie < erSUCCESS indicates error code)
  */
@@ -692,9 +698,8 @@ int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
  * @param   psC = pointer to connection context
  * @param	pBuf = pointer to the buffer to read into
  * @param	xLen = max number of bytes in buffer to read
- * @param	i16Flags = flags as defined in socket.h
  * @param	mSecTime = number of milli-seconds to block
- * @return	  number of bytes read (ie < erSUCCESS indicates error code)
+ * @return	number of bytes read (ie < erSUCCESS indicates error code)
  */
 int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0));
