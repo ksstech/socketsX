@@ -60,16 +60,17 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 	psC->error = eCode;
 	bool fAlloc = 0;
 	char * pcMess = NULL;
+	// Step 1: remap error codes where required
+	if (eCode == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+		psC->error = eCode = ENOTCONN;
+	} else if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
+		psC->error = eCode = EAGAIN;
+	}
+	// Step 2: Map error code to message
 	if (INRANGE(mbedERROR_SMALLEST, eCode, mbedERROR_BIGGEST)) {
-		if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
-			psC->error = EAGAIN;
-		} else if (eCode == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-			psC->error = ENOTCONN;
-		} else {
-			pcMess = malloc(xnetBUFFER_SIZE);
-			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
-			fAlloc = 1;
-		}
+		pcMess = malloc(xnetBUFFER_SIZE);
+		mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
+		fAlloc = 1;
 	} else {
 	#ifdef LWIP_PROVIDE_ERRNO
 		pcMess = (char *) lwip_strerr(eCode);
@@ -77,6 +78,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 		pcMess = (char *) strerror(eCode);
 	#endif
 	}
+	// Step 3: Process error code and message
 	if (eCode != ENOTCONN && (psC->d.ea || eCode != EAGAIN)) {
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
 		/* The problem with printfx() or any of the variants are
