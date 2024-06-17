@@ -111,9 +111,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
-	if (level == 4)
-		wprintfx(NULL, "%d:%s  ", line, file);
-	wprintfx(NULL, "L=%d  %s\r\n", level, str );
+	wprintfx(NULL, "%s Lev=%d '%s' %s:%d\r\n", __FUNCTION__, level, str, level == 4 ? file : strNULL, level == 4 ? line : 0);
 }
 
 /**
@@ -138,50 +136,50 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 
 static int xNetMbedInit(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC->psSec));
-	IF_myASSERT(debugPARAM, halMEM_AddrInANY((void *)psC->psSec->pcCert));
-	IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1);
 
-	mbedtls_net_init(&psC->psSec->server_fd);
+#if	(CONFIG_MBEDTLS_DEBUG > 0)
+	const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
+	u8_t Level = XlatSL2TLS[ioB3GET(ioSLOGhi)];
+	mbedtls_debug_set_threshold(Level);
+	mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
+#endif
+
 	mbedtls_ssl_init(&psC->psSec->ssl);
-	mbedtls_entropy_init(&psC->psSec->entropy );
-	mbedtls_ctr_drbg_init(&psC->psSec->ctr_drbg);
 	mbedtls_x509_crt_init(&psC->psSec->cacert);
+	mbedtls_ctr_drbg_init(&psC->psSec->ctr_drbg);
 	mbedtls_ssl_config_init(&psC->psSec->conf);
+	mbedtls_entropy_init(&psC->psSec->entropy);
 
-	char random_key[xpfMAX_LEN_X64];
-	int iRV = snprintfx(random_key, sizeof(random_key), "%llu", RunTime);
 	char * pcName = NULL;
-	iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, (pcuc_t) random_key, iRV);
-	if (iRV == erSUCCESS) {
+	int iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, NULL, 0);
+	if (iRV != erSUCCESS) { pcName = "mbedtls_ctr_drbg_seed"; goto exit; }
+	if (psC->psSec->pcCert) {
+		IF_myASSERT(debugPARAM, halMEM_AddrInANY((void *)psC->psSec->pcCert));
+		IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1);
 		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) psC->psSec->pcCert, psC->psSec->szCert);
-		if (iRV == erSUCCESS) {
-			iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
-					psC->pHost ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
-					(psC->type == SOCK_STREAM) ? MBEDTLS_SSL_TRANSPORT_STREAM : MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-					MBEDTLS_SSL_PRESET_DEFAULT);
-			if (iRV == erSUCCESS) {
-				iRV = mbedtls_ssl_setup( &psC->psSec->ssl, &psC->psSec->conf);
-				if (iRV == erSUCCESS) {
-					mbedtls_ssl_conf_ca_chain(&psC->psSec->conf, &psC->psSec->cacert, NULL);
-					mbedtls_ssl_conf_rng( &psC->psSec->conf, mbedtls_ctr_drbg_random, &psC->psSec->ctr_drbg );
-					#if	(CONFIG_MBEDTLS_DEBUG > 0)
-					if (debugTRACK && psC->d.sec) {
-						mbedtls_debug_set_threshold(psC->d.lvl + 1);
-						mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
-					}
-					#endif
-				} else {
-					pcName = "mbedtls_ssl_setup";
-				}
-			} else {
-				pcName = "mbedtls_ssl_config_defaults";
-			}
-		} else {
-			pcName = "mbedtls_x509_crt_parse";
-		}
+		if (iRV != erSUCCESS) { pcName = "mbedtls_x509_crt_parse"; goto exit; }
 	} else {
-		pcName = "mbedtls_ctr_drbg_seed";
+		iRV = esp_crt_bundle_attach(&psC->psSec->conf);
+		if (iRV != erSUCCESS) { pcName = "esp_crt_bundle_attach"; goto exit; }
 	}
+	// mbedtls_ssl_set_hostname();
+	iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
+			psC->pHost ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
+			psC->type == SOCK_STREAM ? MBEDTLS_SSL_TRANSPORT_STREAM : MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+			MBEDTLS_SSL_PRESET_DEFAULT);
+	if (iRV != erSUCCESS) { pcName = "mbedtls_ssl_config_defaults"; goto exit; }
+	
+	if (psC->d.ver)
+		mbedtls_ssl_conf_authmode(&psC->psSec->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+	mbedtls_ssl_conf_ca_chain(&psC->psSec->conf, &psC->psSec->cacert, NULL);
+	mbedtls_ssl_conf_rng( &psC->psSec->conf, mbedtls_ctr_drbg_random, &psC->psSec->ctr_drbg);
+	iRV = mbedtls_ssl_setup(&psC->psSec->ssl, &psC->psSec->conf);
+	if (iRV != erSUCCESS) {
+		pcName = "mbedtls_ssl_setup";
+	} else {
+		mbedtls_net_init(&psC->psSec->server_fd);
+	}
+exit:
 	if (iRV != erSUCCESS || pcName)
 		return xNetSyslog(psC, pcName, iRV);
  	return iRV;
