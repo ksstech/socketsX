@@ -51,61 +51,53 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 }
 
 /**
- * @brief
- * @param	psC
- * @param	eCode
- * @return
+ * @brief	process socket (incl MBEDTLS) error codes  using syslog functionality
+ * @param	psC socket context
+ * @param	eCode error code
+ * @return	adjusted error code
  */
 static int xNetSyslog(netx_t * psC, const char * pFname, int eCode) {
-	psC->error = eCode;
 	bool fAlloc = 0;
 	char * pcMess = NULL;
 	// Step 1: remap error codes where required
 	if (eCode == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-		psC->error = eCode = ENOTCONN;
+		eCode = ENOTCONN;
 	} else if (eCode == MBEDTLS_ERR_SSL_WANT_READ || eCode == MBEDTLS_ERR_SSL_WANT_WRITE) {
-		psC->error = eCode = EAGAIN;
+		eCode = EAGAIN;
 	}
-	// Step 2: Map error code to message
-	if (INRANGE(mbedERROR_SMALLEST, eCode, mbedERROR_BIGGEST)) {
-		pcMess = malloc(xnetBUFFER_SIZE);
-		mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
-		fAlloc = 1;
-	} else {
-	#ifdef LWIP_PROVIDE_ERRNO
-		pcMess = (char *) lwip_strerr(eCode);
-	#else
-		pcMess = (char *) strerror(eCode);
-	#endif
-	}
-	// Step 3: Process error code and message
+	psC->error = eCode;
 	if (eCode != ENOTCONN && (psC->d.ea || eCode != EAGAIN)) {
+		// Step 2: Map error code to message
+		if (INRANGE(mbedERROR_SMALLEST, eCode, mbedERROR_BIGGEST)) {
+			pcMess = malloc(xnetBUFFER_SIZE);
+			mbedtls_strerror(eCode, pcMess, xnetBUFFER_SIZE);
+			fAlloc = 1;
+		} else {
+		#ifdef LWIP_PROVIDE_ERRNO
+			pcMess = (char *) lwip_strerr(eCode);
+		#else
+			pcMess = (char *) strerror(eCode);
+		#endif
+		}
+		// Step 3: Process error code and message
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
 		/* The problem with printfx() or any of the variants are
 		 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
 		 * b) and the network connection is dropped; then
 		 * c) the detection of the socket being closed (or other error)
-		 * 	will cause the system to want to send more data to the (closed) socket.....
+		 * d) will cause the system to want to send more data to the (closed) socket.....
+		 * 
 		 * In order to avoid recursing back into syslog in cases of network errors
 		 * encountered in the syslog connection, we check on the d.sl flag.
-		 * If set we change the severity to ONLY go to the console and
+		 * If set, we change the severity to ONLY go to the console and
 		 * not attempt to go out the network, which would bring it back here
-		 *
-		 * Graceful close (unexpected) returns 0 but sets errno to 128
-		 * errno = 128 NOT defined in errno.h
-		 *		https://github.com/espressif/esp-idf/issues/2540
-		 * Hence, to ensure Syslog related errors does not get logged, lift the level
+		 * Hence to ensure Syslog related errors does not get logged, lift the level
 		 */
 		int Level = psC->d.sl ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
-		vSyslog(Level, pFname, "%s:%d err=%d (%s)", pHost, ntohs(psC->sa_in.sin_port), eCode, pcMess);
+		vSyslog(Level, pFname, "%s:%d err=%d/x%X (%s)", pHost, ntohs(psC->sa_in.sin_port), eCode, eCode, pcMess);
 	}
 	if (fAlloc)
 		free(pcMess);
-	/* Under certain conditions we can close the socket automatically
-	 * XXX: strange & need further investigation, does not make sense. Specifically done to
-	 * avoid Telnet closing connection when eCode = -1 but errno = 0 return erFAILURE; 
-	 *	if (psC->error == ENOTCONN) xNetClose(psC);
-	 */
 	return psC->error ? erFAILURE : erSUCCESS;
 }
 
