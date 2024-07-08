@@ -15,8 +15,9 @@
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
-#include "esp_crt_bundle.h"
-
+#ifdef CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+	#include "esp_crt_bundle.h"
+#endif
 #include "x_ubuf.h"
 
 #ifdef __cplusplus
