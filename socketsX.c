@@ -160,12 +160,15 @@ static int xNetMbedInit(netx_t * psC) {
 			goto exit;
 		}
 	} else {
+		#ifdef CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 		iRV = esp_crt_bundle_attach(&psC->psSec->conf);
 		if (iRV != erSUCCESS) {
 			pcName = "esp_crt_bundle_attach";
 			goto exit;
 		}
+		#endif
 	}
+
 	// mbedtls_ssl_set_hostname();
 	iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
 			psC->pHost ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
