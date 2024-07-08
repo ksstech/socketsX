@@ -258,8 +258,8 @@ static int xNetGetHost(netx_t * psC) {
 	if (psAI != NULL)
 		freeaddrinfo(psAI);
 	return iRV;
-	#elif (OPT_RESOLVE == 2)			// [lwip_]gethostbyname()	UNRELIABLE
 
+#elif (OPT_RESOLVE == 2)			// [lwip_]gethostbyname()	UNRELIABLE
 	static SemaphoreHandle_t GetHostMux;
 	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
 	int iRV = erSUCCESS;
@@ -283,36 +283,7 @@ static int xNetGetHost(netx_t * psC) {
 	xRtosSemaphoreGive(&GetHostMux);
 	return iRV;
 
-	#elif (OPT_RESOLVE == 3)			// [lwip_]gethostbyname_r()	UNRELIABLE
-	struct hostent sHE, * psHE;
-	size_t hstbuflen = 256;
-	char *tmphstbuf;
-	int iRV, psAI;
-	/* Allocate buffer, remember to free it to avoid memory leakage.  */
-	tmphstbuf = malloc (hstbuflen);
-	while ((iRV = gethostbyname_r (psC->pHost, &sHE, tmphstbuf, hstbuflen, &psHE, &psAI)) == ERANGE) {
-		/* Enlarge the buffer.  */
-		hstbuflen *= 2;
-		tmphstbuf = realloc (tmphstbuf, hstbuflen);
-	}
-	P("Host=:%s psHE=%p Size=%d iRV=%d res=%d\r\n", psC->pHost, psHE, hstbuflen, iRV, psAI);
-	/*  Check for errors.  */
-	if (psAI || psHE == NULL) {
-		iRV = xNetSyslog(psC, __FUNCTION__, psAI);
-	} else {
-		IF_PX(psHE, "Name=%s  Type=%d  Len=%d  List=%p",
-				psHE->h_name, psHE->h_addrtype, psHE->h_length, psHE->h_addr_list);
-		IF_PX(psHE && psHE->h_addr_list, "  List[0]=%p", psHE->h_addr_list[0]);
-		IF_PX(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "  Addr[0]=%-#I", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
-		P(strCRLF);
-		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
-		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
-		if (debugTRACK && psC->d.h)
-			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
-	}
-	free(tmphstbuf);
-	return iRV;
-	#elif (OPT_RESOLVE == 4)			// netconn_gethostbyname_addrtype()
+#elif (OPT_RESOLVE == 3)			// netconn_gethostbyname_addrtype()
 	ip_addr_t addr;
 	int iRV = netconn_gethostbyname_addrtype(psC->pHost, &addr, AF_INET);
 	TRACK("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d\r\n", psC->pHost, iRV, addr.type,
