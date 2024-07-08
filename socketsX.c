@@ -135,12 +135,12 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 static int xNetMbedInit(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC->psSec));
 
-#if	(CONFIG_MBEDTLS_DEBUG > 0)
+	#if	(CONFIG_MBEDTLS_DEBUG > 0)
 	const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
 	u8_t Level = XlatSL2TLS[ioB3GET(ioSLOGhi)];
 	mbedtls_debug_set_threshold(Level);
 	mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
-#endif
+	#endif
 
 	mbedtls_ssl_init(&psC->psSec->ssl);
 	mbedtls_x509_crt_init(&psC->psSec->cacert);
@@ -155,17 +155,26 @@ static int xNetMbedInit(netx_t * psC) {
 		IF_myASSERT(debugPARAM, halMEM_AddrInANY((void *)psC->psSec->pcCert));
 		IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1);
 		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) psC->psSec->pcCert, psC->psSec->szCert);
-		if (iRV != erSUCCESS) { pcName = "mbedtls_x509_crt_parse"; goto exit; }
+		if (iRV != erSUCCESS) {
+			pcName = "mbedtls_x509_crt_parse";
+			goto exit;
+		}
 	} else {
 		iRV = esp_crt_bundle_attach(&psC->psSec->conf);
-		if (iRV != erSUCCESS) { pcName = "esp_crt_bundle_attach"; goto exit; }
+		if (iRV != erSUCCESS) {
+			pcName = "esp_crt_bundle_attach";
+			goto exit;
+		}
 	}
 	// mbedtls_ssl_set_hostname();
 	iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
 			psC->pHost ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
 			psC->type == SOCK_STREAM ? MBEDTLS_SSL_TRANSPORT_STREAM : MBEDTLS_SSL_TRANSPORT_DATAGRAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
-	if (iRV != erSUCCESS) { pcName = "mbedtls_ssl_config_defaults"; goto exit; }
+	if (iRV != erSUCCESS) {
+		pcName = "mbedtls_ssl_config_defaults";
+		goto exit;
+	}
 	
 	if (psC->d.ver)
 		mbedtls_ssl_conf_authmode(&psC->psSec->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
@@ -226,7 +235,7 @@ static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
 		return erFAILURE;
-	#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
+#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	struct addrinfo * psAI;
 	struct addrinfo sAI;
 	memset (&sAI, 0, sizeof(sAI));
