@@ -368,35 +368,6 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	return iRV;
 }
 
-/*
- * @brief	Used when reading/writing blocks/buffers to adjust the overall timeout specified
- * @param	Socket context to use
- * @param	Timeout (total) to be configured into multiple retries of a smaller periods
- * @return	Actual period configured
- */
-u32_t xNetAdjustTimeout(netx_t * psC, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
-	psC->trynow	= 0;
-	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
-	if (mSecTime <= flagXNET_NONBLOCK) {
-		psC->trymax	= 1;
- 		psC->tOut = mSecTime;
-		return mSecTime;
-	}
-	// adjust the lower limit.
-	if (mSecTime < configXNET_MIN_TIMEOUT)
-		mSecTime = configXNET_MIN_TIMEOUT;
-	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) {
-		psC->trymax = configXNET_MAX_RETRIES;
-	} else {
-		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT;
-	}
-	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
-	if (debugTRACK && psC->d.t)
-		xNetReport(NULL, psC, __FUNCTION__, mSecTime, 0, 0);
-	return psC->tOut;
-}
-
 int	xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
 	int iRV = erSUCCESS;
@@ -653,7 +624,39 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	return iRV;
 }
 
-// #################################################################################################
+// ##################################### Block Send/Receive ########################################
+
+#if 0
+/*
+ * @brief	Used when reading/writing blocks/buffers to adjust the overall timeout specified
+ * @param	Socket context to use
+ * @param	Timeout (total) to be configured into multiple retries of a smaller periods
+ * @return	Actual period configured
+ */
+u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
+	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC));
+	if (mSecTime == (psC->trymax * psC->tOut))			// same as previous
+		return psC->tOut;
+	psC->trynow	= 0;
+	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
+	if (mSecTime <= flagXNET_NONBLOCK) {
+		psC->trymax	= 1;
+ 		psC->tOut = mSecTime;
+		return mSecTime;
+	}
+	// adjust the lower limit.
+	if (mSecTime < configXNET_MIN_TIMEOUT)
+		mSecTime = configXNET_MIN_TIMEOUT;
+	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) {
+		psC->trymax = configXNET_MAX_RETRIES;
+	} else {
+		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT;
+	}
+	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
+	if (debugTRACK && psC->d.t)
+		xNetReport(NULL, psC, __FUNCTION__, mSecTime, 0, 0);
+	return psC->tOut;
+}
 
 /**
  * @brief	Send memory buffer in smaller blocks using socket connection
@@ -706,9 +709,11 @@ int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
  	} while ((++psC->trynow < psC->trymax) && (xLenDone < xLen));
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
+#endif
 
 // ###################################### uBuf Send/Receive ########################################
 
+#if 0
 int	xNetSendUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0));
 	int	iRV = xNetSendBlocks(psC, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime);
@@ -728,6 +733,7 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	}
 	return iRV;
 }
+#endif
 
 // ###################################### Socket Reporting #########################################
 
