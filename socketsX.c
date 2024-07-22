@@ -473,6 +473,11 @@ int	xNetOpen(netx_t * psC) {
 	if (iRV < erSUCCESS) {
 		return iRV;
 	}
+	if (psC->soRcvTO) {
+		iRV = xNetSetRecvTO(psC, psC->soRcvTO);
+		if (iRV == -1)
+			return iRV;
+	}
 #if	(netxBUILD_SPC == 1)
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
