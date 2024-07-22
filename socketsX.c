@@ -357,8 +357,8 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 			socklen_t SockOptLen;
 			SockOptLen = sizeof(timeVal);
 			getsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen);
-			u32_t tOut = (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC);
-			myASSERT(tOut == mSecTime);
+			u32_t tTest = (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC);
+			myASSERT(tTest == mSecTime);
 		}
 	}
 	if (iRV == -1)
