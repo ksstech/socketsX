@@ -67,8 +67,8 @@ extern "C" {
 #define	IP_PORT_MQTT 				1883				// TCP Insecure stream port
 #define	IP_PORT_MQTTS				8883				// TCP/TLS Secure stream port
 
-#define	NETX_DBG_FLAGS(O, H, BL, T, A, S, W, R, D, CL, SL, EA, VER, SEC, LVL, HTTP) (netx_dbg_t) \
-	{ .o=O, .h=H, .bl=BL, .t=T, .a=A, .s=S, .w=W, .r=R, .d=D, .cl=CL, .sl=SL, .ea=EA, .ver=VER, .sec=SEC, .lvl=LVL, .http=HTTP }
+#define	NETX_DBG_FLAGS(O, H, BL, T, A, S, W, R, D, CL, EA, VER, SEC, LVL, HTTP) (netx_dbg_t) \
+	{ .o=O, .h=H, .bl=BL, .t=T, .a=A, .s=S, .w=W, .r=R, .d=D, .cl=CL, .ea=EA, .ver=VER, .sec=SEC, .lvl=LVL, .http=HTTP }
 
 // ########################################### enumerations ########################################
 
@@ -113,12 +113,13 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	size_t maxTx, maxRx;
 	i16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
+	u16_t soRcvTO;					// socket option receive timeout
 	struct __attribute__((packed)) {
 		u8_t trymax;				// max times to try read
 		u8_t trynow;				// times tried
-		u8_t spare;
 		u8_t type:3;				// valid 1->5, STREAM/TCP, DGRAM/UDP or RAW/RAW
-		u8_t uu:5;
+		u8_t bSyslog:1;				// call from syslog, change level in xNetGetError()
+		u16_t spare:12;
 	};
 	union netx_dbg_u {				// debug control flags
 		struct __attribute__((packed)) {
@@ -132,7 +133,6 @@ typedef struct __attribute__((aligned(4))) netx_t {
 			u8_t r:1;				// read/recv
 			u8_t d:1;				// data (used with read & write)
 			u8_t cl:1;				// close
-			u8_t sl:1;				// change syslog level in xNetGetError()
 			u8_t ea:1;				// show EAGAIN errors
 			// TLS related
 			u8_t ver:1;				// enable certificate verification
@@ -140,9 +140,8 @@ typedef struct __attribute__((aligned(4))) netx_t {
 			u8_t lvl:2;				// Mbed TLS 1=0, 2=1, 3=2, 4=3 (0=no debug not allowed)
 			// HTTP support
 			u8_t http:1;
-			u16_t spare:15;
 		};
-		u32_t val;
+		u16_t val;
 	} d;
 } netx_t;
 DUMB_STATIC_ASSERT( sizeof(netx_t) == (36 + sizeof(struct sockaddr_in)));

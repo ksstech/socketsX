@@ -109,7 +109,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
-	wprintfx(NULL, "%s Lev=%d '%s' %s:%d\r\n", __FUNCTION__, level, str, level == 4 ? file : strNULL, level == 4 ? line : 0);
+	wprintfx(NULL, "%s Lev=%d '%s' %s:%d" strNL, __FUNCTION__, level, str, level == 4 ? file : strNULL, level == 4 ? line : 0);
 }
 
 /**
@@ -118,15 +118,15 @@ void vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
  */
 static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *flags) {
 	(void) data;
-	wprintfx(NULL, "xNetMbedVerify: Verifying certificate at depth %d:\r\n", depth);
+	wprintfx(NULL, "xNetMbedVerify: Verifying certificate at depth %d:" strNL, depth);
 	pc_t pBuf = malloc(xnetBUFFER_SIZE);
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
 	wprintfx(NULL, pBuf);
 	if (*flags == 0) {
-		wprintfx(NULL, "xNetMbedVerify: No verification issue for this certificate\r\n");
+		wprintfx(NULL, "xNetMbedVerify: No verification issue for this certificate" strNL);
 	} else {
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
-		wprintfx(NULL, "xNetMbedVerify: %s\r\n", pBuf);
+		wprintfx(NULL, "xNetMbedVerify: %s" strNL, pBuf);
 	}
 	free(pBuf);
 	return 0;
@@ -218,7 +218,7 @@ static void vNetMbedDeInit(netx_t * psC) {
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
 	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
 	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
-	int iRV = wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d\r\n",
+	int iRV = wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
 			 xpfSGR(0,0,colourFG_CYAN,0), pFname, xpfSGR(0,0,attrRESET,0),
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
@@ -227,7 +227,7 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			psC->trymax, psC->tOut, psC->tOut == 0 ? "(BLK)" : psC->tOut == 1 ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen)
-		iRV += wprintfx(psR, "%!'+hhY\r\n", xLen, pBuf);
+		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
 	iRV += wprintfx(psR, repFORM_TST(psR,aNL) ? strNL : NULL);
 	return iRV;
 }
@@ -264,13 +264,13 @@ static int xNetGetHost(netx_t * psC) {
 	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
 	int iRV = erSUCCESS;
 	struct hostent * psHE = gethostbyname(psC->pHost);
-//	P("Host=:%s  psHE=%p\r\n", psC->pHost, psHE);
-//	IF_PX(psHE, "Name=%s\r\n", psHE->h_name);
-//	IF_PX(psHE, "Type=%d\r\n", psHE->h_addrtype);
-//	IF_PX(psHE, "Len=%d\r\n", psHE->h_length);
-//	IF_PX(psHE, "List=%p\r\n", psHE->h_addr_list);
-//	IF_PX(psHE && psHE->h_addr_list, "List[0]=%p\r\n", psHE->h_addr_list[0]);
-//	IF_PX(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I\r\n", ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
+//	P("Host=:%s  psHE=%p" strNL, psC->pHost, psHE);
+//	IF_PX(psHE, "Name=%s" strNL, psHE->h_name);
+//	IF_PX(psHE, "Type=%d" strNL, psHE->h_addrtype);
+//	IF_PX(psHE, "Len=%d" strNL, psHE->h_length);
+//	IF_PX(psHE, "List=%p" strNL, psHE->h_addr_list);
+//	IF_PX(psHE && psHE->h_addr_list, "List[0]=%p" strNL, psHE->h_addr_list[0]);
+//	IF_PX(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I" strNL, ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
 	if ((psHE == NULL) || (psHE->h_addrtype != AF_INET) ||
 		(psHE->h_addr_list == NULL) || (psHE->h_addr_list[0] == NULL)) {
 		iRV = xNetSyslog(psC, __FUNCTION__, h_errno);
@@ -286,7 +286,7 @@ static int xNetGetHost(netx_t * psC) {
 #elif (OPT_RESOLVE == 3)			// netconn_gethostbyname_addrtype()
 	ip_addr_t addr;
 	int iRV = netconn_gethostbyname_addrtype(psC->pHost, &addr, AF_INET);
-	TRACK("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d\r\n", psC->pHost, iRV, addr.type,
+	TRACK("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d" strNL, psC->pHost, iRV, addr.type,
 		sizeof(struct sockaddr_storage), sizeof(struct sockaddr), sizeof(struct sockaddr_in));
 	if (iRV == ERR_OK) {
 		struct sockaddr_in * psSAI = &psC->sa_in;
@@ -733,7 +733,7 @@ void xNetReportStats(report_t * psR) {
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
-			wprintfx(psR, "sock: %d -- addr: %-#I:%d\r\n", sock, addr.sin_addr.s_addr, addr.sin_port);
+			wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, addr.sin_port);
 	}
 	wprintfx(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
