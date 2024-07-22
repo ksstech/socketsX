@@ -669,7 +669,7 @@ u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
 int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halMEM_AddrInANY(pBuf) && xLen > 0);
 	int	iRV, xLenDone = 0;
-	mSecTime = xNetAdjustTimeout(psC, mSecTime);
+	mSecTime = xNetAdjustTO(psC, mSecTime);
 	do {
 		iRV = xNetSelect(psC, selFLAG_WRITE);
 		if (iRV < 0)
@@ -696,7 +696,7 @@ int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
  */
 int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psC) && halCONFIG_inSRAM(pBuf) && (xLen > 0));
-	mSecTime = xNetAdjustTimeout(psC, mSecTime);
+	mSecTime = xNetAdjustTO(psC, mSecTime);
 	xNetSetRecvTO(psC, mSecTime);
 	int	iRV, xLenDone = 0;
 	do {
