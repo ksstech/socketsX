@@ -473,7 +473,7 @@ int	xNetOpen(netx_t * psC) {
 	if (iRV < erSUCCESS) {
 		return iRV;
 	}
-	#if	(netxBUILD_SPC == 1)
+#if	(netxBUILD_SPC == 1)
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePreConnect(psC);
@@ -481,7 +481,7 @@ int	xNetOpen(netx_t * psC) {
 			return iRV;
 		}
 	}
-	#endif
+#endif
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
@@ -518,14 +518,14 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	memset(psClntCtx, 0, sizeof(netx_t));		// clear the client context
 	socklen_t len = sizeof(struct sockaddr_in);
 
-	/* Also need to consider adding a loop to repeat the accept()
-	 * in case of EAGAIN or POOL_IS_EMPTY errors */
+	// Also need to consider adding a loop to repeat the accept()
+	// in case of EAGAIN or POOL_IS_EMPTY errors
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
 	if (iRV == erFAILURE)
 		return xNetSyslog(psServCtx, __FUNCTION__, iRV);
 	psServCtx->error = 0;
-	/* The server socket had flags set for BIND & LISTEN but the client
-	 * socket should just be connected and marked same type & flags */
+	// The server socket had flags set for BIND & LISTEN but the client
+	// socket should just be connected and marked same type & flags
 	psClntCtx->sd = iRV;
 	psClntCtx->type = psServCtx->type;						// Make same type TCP/UDP/RAW
 	psClntCtx->d.val = psServCtx->d.val;					// inherit all flags
@@ -592,7 +592,7 @@ int	xNetClose(netx_t * psC) {
 	return iRV;
 }
 
-// #################################################################################################
+// ##################################### Basic Send/Receive ########################################
 
 /**
  * @brief	Write data to host based on connection context
@@ -612,8 +612,9 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	} else {
 		iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
 	}
-	if (iRV < erSUCCESS)
+	if (iRV < erSUCCESS) {
 		return xNetSyslog(psC, __FUNCTION__, iRV);
+	}
 	psC->error = 0;
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
 	if (debugTRACK && psC->d.w)
@@ -702,7 +703,7 @@ int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
 
-// #################################################################################################
+// ###################################### uBuf Send/Receive ########################################
 
 int	xNetSendUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halCONFIG_inSRAM(psBuf) && halCONFIG_inSRAM(psBuf->pBuf) && (psBuf->Size > 0));
@@ -724,7 +725,7 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	return iRV;
 }
 
-// #################################################################################################
+// ###################################### Socket Reporting #########################################
 
 void xNetReportStats(report_t * psR) {
 	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
