@@ -94,12 +94,12 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 		 * d) will cause the system to want to send more data to the (closed) socket.....
 		 * 
 		 * In order to avoid recursing back into syslog in cases of network errors
-		 * encountered in the syslog connection, we check on the d.sl flag.
+		 * encountered in the syslog connection, we check on the bSyslog flag.
 		 * If set, we change the severity to ONLY go to the console and
 		 * not attempt to go out the network, which would bring it back here
 		 * Hence to ensure Syslog related errors does not get logged, lift the level
 		 */
-		int Level = psC->d.sl ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
+		int Level = psC->bSyslog ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d err=%d/x%X (%s) iRV=%d", pHost, ntohs(psC->sa_in.sin_port), psC->error, psC->error, pcMess, iRV);
 	}
 	if (fAlloc)
