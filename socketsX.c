@@ -224,7 +224,7 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
 			Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV", Code, psC->trynow,
-			psC->trymax, psC->tOut, psC->tOut == 0 ? "(BLK)" : psC->tOut == 1 ? "(NB)" : "mSec",
+			psC->trymax, psC->tOut, (psC->tOut == 0) ? "(BLK)" : (psC->tOut == 1) ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen)
 		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
