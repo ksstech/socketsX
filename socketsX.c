@@ -617,9 +617,8 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	} else {
 		iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
 	}
-	if (iRV < erSUCCESS) {
+	if (iRV < erSUCCESS)
 		return xNetSyslog(psC, __FUNCTION__, iRV);
-	}
 	psC->error = 0;
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
 	if (debugTRACK && psC->d.w)
