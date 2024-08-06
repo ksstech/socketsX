@@ -63,13 +63,15 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
  * @return	adjusted error code
  */
 static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
+	// save error code from network stack
+//	psC->error = (errno != 0) ? errno : iRV;					
+	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : iRV;
 	bool fAlloc = 0;
 	char * pcMess = NULL;
-	psC->error = errno;									// save error code from network stack
 	// Step 1: remap error codes where required
 	if (psC->error == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
 		psC->error = ENOTCONN;
-	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE) {
+	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN) {
 		psC->error = EAGAIN;
 	}
 	if (psC->error != ENOTCONN && (psC->d.ea || psC->error != EAGAIN)) {
@@ -79,11 +81,16 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 			mbedtls_strerror(psC->error, pcMess, xnetBUFFER_SIZE);
 			fAlloc = 1;
 		} else {
-		#ifdef LWIP_PROVIDE_ERRNO
-			pcMess = (char *) lwip_strerr(psC->error);
-		#else
-			pcMess = (char *) strerror(psC->error);
-		#endif
+			// https://sourceware.org/glibc/wiki/NameResolver
+//			if (INRANGE(EAI_NONAME, psC->error, TRY_AGAIN) {
+//				pcMess = gai_strerror(psC->error);
+//			} else {
+//				#ifdef LWIP_PROVIDE_ERRNO
+				pcMess = lwip_strerr(psC->error);
+//				#else
+//				pcMess = strerror(psC->error);
+//				#endif
+//			}
 		}
 		// Step 3: Process error code and message
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
@@ -239,13 +246,14 @@ static int xNetGetHost(netx_t * psC) {
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
 		return erFAILURE;
 #if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
+	// https://sourceware.org/glibc/wiki/NameResolver
+	// https://github.com/espressif/esp-idf/issues/5521
 	struct addrinfo * psAI;
-	struct addrinfo sAI;
-	memset (&sAI, 0, sizeof(sAI));
+	struct addrinfo sAI = { 0 };
 	sAI.ai_family = psC->sa_in.sin_family;
 	sAI.ai_socktype = psC->type;
 	char portnum[16];
-	snprintfx(portnum, sizeof(portnum), "%d", ntohs(psC->sa_in.sin_port));
+	snprintfx(portnum, sizeof(portnum), "%u", ntohs(psC->sa_in.sin_port));
 	int iRV = getaddrinfo(psC->pHost, portnum, &sAI, &psAI);
 	if (iRV != erSUCCESS || psAI == NULL) {
 		iRV = xNetSyslog(psC, __FUNCTION__, iRV);

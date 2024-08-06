@@ -2,11 +2,18 @@
 
 #pragma once
 
+//#include <err.h>
+//#include <sockets.h>
+//#include <sys.h>
+//#include <dns.h>
+#include <netdb.h>
+
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
-#include "lwip/netdb.h"
+//#include "lwip/netdb.h"
 #include "lwip/dns.h"
+
 
 #include "mbedtls/platform.h"
 #include "mbedtls/net_sockets.h"
