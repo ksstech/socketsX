@@ -748,20 +748,20 @@ void xNetReportStats(report_t * psR) {
 	}
 	wprintfx(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
-			"Wifi: Static Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
-			"  Rx="  			mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
-			"  Dynamic Rx="		mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) strNL
+			"Wifi: Static Tx="	toSTR(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
+			"  Rx="  			toSTR(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
+			"  Dynamic Rx="		toSTR(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) strNL
 		#elif (CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
-			"Wifi: Dynamic Tx="	mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM)
-			"  Rx="				mySTRINGIFY(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM)
-			"  Static Rx="  	mySTRINGIFY(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) strNL
+			"Wifi: Dynamic Tx="	toSTR(CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM)
+			"  Rx="				toSTR(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM)
+			"  Static Rx="  	toSTR(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) strNL
 		#endif
-			"LWIP: MaxSock="	mySTRINGIFY(CONFIG_LWIP_MAX_SOCKETS)
-			"  RcvMboxSize="	mySTRINGIFY(CONFIG_TCPIP_RECVMBOX_SIZE) strNL
-			"TCP: Max Act="		mySTRINGIFY(CONFIG_LWIP_MAX_ACTIVE_TCP)
-			"  Listen="			mySTRINGIFY(CONFIG_LWIP_MAX_LISTENING_TCP) strNL
-			"UDP: Max PCBs="	mySTRINGIFY(CONFIG_LWIP_MAX_UDP_PCBS)
-			"  RxMboxSize=" 	mySTRINGIFY(CONFIG_UDP_RECVMBOX_SIZE) strNL);
+			"LWIP: MaxSock="	toSTR(CONFIG_LWIP_MAX_SOCKETS)
+			"  RcvMboxSize="	toSTR(CONFIG_TCPIP_RECVMBOX_SIZE) strNL
+			"TCP: Max Act="		toSTR(CONFIG_LWIP_MAX_ACTIVE_TCP)
+			"  Listen="			toSTR(CONFIG_LWIP_MAX_LISTENING_TCP) strNL
+			"UDP: Max PCBs="	toSTR(CONFIG_LWIP_MAX_UDP_PCBS)
+			"  RxMboxSize=" 	toSTR(CONFIG_UDP_RECVMBOX_SIZE) strNL);
 	void dbg_lwip_tcp_pcb_show(void); dbg_lwip_tcp_pcb_show();
 	void dbg_lwip_udp_pcb_show(void); dbg_lwip_udp_pcb_show();
 	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
