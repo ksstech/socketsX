@@ -709,11 +709,9 @@ int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
  	} while ((++psC->trynow < psC->trymax) && (xLenDone < xLen));
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
-#endif
 
 // ###################################### uBuf Send/Receive ########################################
 
-#if 0
 int	xNetSendUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psBuf) && halMemorySRAM(psBuf->pBuf) && (psBuf->Size > 0));
 	int	iRV = xNetSendBlocks(psC, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime);
