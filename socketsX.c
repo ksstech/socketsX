@@ -15,7 +15,6 @@
 	#include "mbedtls/debug.h"
 #endif
 #include "mbedtls/error.h"
-#include <errno.h>
 
 // ############################### BUILD: debug configuration options ##############################
 
@@ -64,7 +63,6 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
  */
 static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 	// save error code from network stack
-//	psC->error = (errno != 0) ? errno : iRV;					
 	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : iRV;
 	bool fAlloc = 0;
 	char * pcMess = NULL;
@@ -81,16 +79,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 			mbedtls_strerror(psC->error, pcMess, xnetBUFFER_SIZE);
 			fAlloc = 1;
 		} else {
-			// https://sourceware.org/glibc/wiki/NameResolver
-//			if (INRANGE(EAI_NONAME, psC->error, TRY_AGAIN) {
-//				pcMess = gai_strerror(psC->error);
-//			} else {
-//				#ifdef LWIP_PROVIDE_ERRNO
-				pcMess = lwip_strerr(psC->error);
-//				#else
-//				pcMess = strerror(psC->error);
-//				#endif
-//			}
+			pcMess = (char *) pcStrError(psC->error);
 		}
 		// Step 3: Process error code and message
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
