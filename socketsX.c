@@ -74,13 +74,12 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 	}
 	if (psC->error != ENOTCONN && (psC->d.ea || psC->error != EAGAIN)) {
 		// Step 2: Map error code to message
-		pcMess = malloc(xnetBUFFER_SIZE);
-		fAlloc = 1;
 		if (INRANGE(mbedERROR_SMALLEST, psC->error, mbedERROR_BIGGEST)) {
+			pcMess = malloc(xnetBUFFER_SIZE);
+			fAlloc = 1;
 			mbedtls_strerror(psC->error, pcMess, xnetBUFFER_SIZE);
 		} else {
-			esp_err_to_name_r(psC->error, pcMess, xnetBUFFER_SIZE);
-//			pcMess = (char *) pcStrError(psC->error);
+			pcMess = (char *) pcStrError(psC->error);
 		}
 		// Step 3: Process error code and message
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
