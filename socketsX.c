@@ -358,7 +358,7 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 			myASSERT(tTest == mSecTime);
 		}
 	}
-	if (iRV == -1)
+	if (iRV < erSUCCESS)
 		return xNetSyslog(psC, __FUNCTION__, iRV);
 	if (debugTRACK && psC->d.t)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
