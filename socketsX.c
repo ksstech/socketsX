@@ -297,7 +297,7 @@ static int xNetGetHost(netx_t * psC) {
 		iRV = xNetSyslog(psC, __FUNCTION__, iRV);
 	}
 	return iRV;
-	#endif
+#endif
 }
 
 static int xNetSocket(netx_t * psC)  {
@@ -335,7 +335,7 @@ static int xNetConnect(netx_t * psC) {
  * @brief	Configure a socket to be non-blocking or with a specific timeout
  * @param	Socket context to use
  * @param	Timeout to be configured
- * @return	Actual period configured
+ * @return	erSUCCESS or a negative error code
  */
 int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
@@ -476,12 +476,12 @@ int	xNetOpen(netx_t * psC) {
 }
 
 /**
- * xNetAccept()
- * @param psServCtx
- * @param psClntCtx
- * @param mSecTime
- * @return			on success file descriptor of the socket (positive value)
- * 					on failure erFAILURE (-1) with error set...
+ * @brief	
+ * @param	psServCtx
+ * @param	psClntCtx
+ * @param	mSecTime
+ * @return	on success file descriptor of the socket (positive value)
+ * 			on failure erFAILURE (-1) with error set...
  */
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psServCtx) && halMemorySRAM(psClntCtx));
@@ -512,9 +512,9 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 }
 
 /**
- * xNetSelect() - Used with write() to minimise the wait time...
- * @param psC
- * @param Flag
+ * @brief	Used with write() to minimise the wait time...
+ * @param	psC - network connection context
+ * @param	Flag - 
  * @return
  */
 int	xNetSelect(netx_t * psC, uint8_t Flag) {
@@ -537,16 +537,17 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	if (iRV < erSUCCESS)
 		return xNetSyslog(psC, __FUNCTION__, iRV);
 	psC->error = 0;
-	if (debugTRACK && psC->d.s) xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
-													Flag == selFLAG_WRITE ? "write/select" :
-													Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
+	if (debugTRACK && psC->d.s)
+		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
+								Flag == selFLAG_WRITE ? "write/select" :
+								Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
 	return iRV;
 }
 
 /**
- * xNetClose()  - closes the socket connection
- * @param[in]   psC = pointer to connection context
- * @return	  result of the close (ie < erSUCCESS indicate error code)
+ * @brief	the socket connection
+ * @param	psC = pointer to connection context
+ * @return	result of the close (ie < erSUCCESS indicate error code)
  */
 int	xNetClose(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
