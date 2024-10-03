@@ -224,7 +224,8 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen)
 		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
-	iRV += wprintfx(psR, repFORM_TST(psR,aNL) ? strNL : NULL);
+	if (repFORM_TST(psR,aNL))
+		iRV += wprintfx(psR, strNL);
 	return iRV;
 }
 
