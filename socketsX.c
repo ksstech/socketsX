@@ -4,12 +4,12 @@
 #include "hal_memory.h"
 #include "hal_network.h"								// Station IP address
 #include "hal_options.h"
+#include "errors_events.h"
 #include "socketsX.h"
 #include "printfx.h"									// +x_definitions +stdarg +stdint +stdio
 #include "syslog.h"
 #include "systiming.h"
-#include "x_utilities.h"
-#include "x_errors_events.h"
+#include "utilitiesX.h"
 
 #ifdef	CONFIG_MBEDTLS_DEBUG
 	#include "mbedtls/debug.h"
