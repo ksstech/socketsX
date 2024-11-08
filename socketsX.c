@@ -11,6 +11,14 @@
 #include "systiming.h"
 #include "utilitiesX.h"
 
+#ifdef CONFIG_LWIP_STATS
+	#include "lwip/stats.h"
+#endif
+
+#ifdef CONFIG_LWIP_DEBUG
+	#include "lwip/debug.h"
+#endif
+
 #ifdef	CONFIG_MBEDTLS_DEBUG
 	#include "mbedtls/debug.h"
 #endif
@@ -340,8 +348,7 @@ static int xNetConnect(netx_t * psC) {
 int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
-	if (psC->tOut == mSecTime)
-		return erSUCCESS;								// nothing to do, already correct
+	if (psC->tOut == mSecTime) return erSUCCESS;		// nothing to do, already correct
 	psC->tOut = mSecTime;
 	int iRV;
 	if (mSecTime <= flagXNET_NONBLOCK) {
@@ -359,10 +366,8 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 			myASSERT(tTest == mSecTime);
 		}
 	}
-	if (iRV < erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, iRV);
-	if (debugTRACK && psC->d.t)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, iRV);
+	if (debugTRACK && psC->d.t) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -416,9 +421,7 @@ int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV;
 	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(10000));
-	if (ebX != flagLX_STA && ebX != flagLX_SAP) {
-		return erFAILURE;
-	}
+	if (ebX != flagLX_STA && ebX != flagLX_SAP)	return erFAILURE;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
@@ -430,48 +433,35 @@ int	xNetOpen(netx_t * psC) {
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psC->pHost) {									// Client type connection ?
 		iRV = xNetGetHost(psC);
-		if (iRV < erSUCCESS) {
-			return iRV;
-		}
+		if (iRV < erSUCCESS)				return iRV;
 	} else {
 		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psC);
-	if (iRV < erSUCCESS) {
-		return iRV;
-	}
+	if (iRV < erSUCCESS)					return iRV;
 	if (psC->soRcvTO) {
 		iRV = xNetSetRecvTO(psC, psC->soRcvTO);
-		if (iRV == -1)
-			return iRV;
+		if (iRV == -1)						return iRV;
 	}
 #if	(netxBUILD_SPC == 1)
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePreConnect(psC);
-		if (iRV < erSUCCESS) {
-			return iRV;
-		}
+		if (iRV < erSUCCESS)				return iRV;
 	}
 #endif
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
-	if (iRV < erSUCCESS) {
-		return iRV;
-	}
+	if (iRV < erSUCCESS)					return iRV;
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePostConnect(psC);
-		if (iRV < erSUCCESS) {
-			return iRV;
-		}
+		if (iRV < erSUCCESS)				return iRV;
 	}
-	if (debugTRACK && psC->d.o) {
-		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
-	}
+	if (debugTRACK && psC->d.o)				xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -553,16 +543,14 @@ int	xNetClose(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV = erSUCCESS;
 	if (psC->sd != -1) {
-		if (debugTRACK && psC->d.cl)
-			xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
+		if (debugTRACK && psC->d.cl)		xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
 		if (psC->psSec) {
 			mbedtls_ssl_close_notify(&psC->psSec->ssl);
 			vNetMbedDeInit(psC);
 		}
 		iRV = close(psC->sd);
 		psC->sd = -1;								// mark as closed
-		if (debugTRACK && psC->d.cl)
-			xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
+		if (debugTRACK && psC->d.cl)		xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
 	}
 	return iRV;
 }
@@ -614,12 +602,10 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 		socklen_t i16AddrSize = sizeof(struct sockaddr_in);
 		iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 	}
-	if (iRV < erSUCCESS)
-		return xNetSyslog(psC, __FUNCTION__, iRV);
+	if (iRV < erSUCCESS) return xNetSyslog(psC, __FUNCTION__, iRV);
 	psC->error = 0;
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
-	if (debugTRACK && psC->d.r)
-		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugTRACK && psC->d.r) xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
@@ -737,18 +723,18 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 void xNetReportStats(report_t * psR) {
 	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
 	    struct sockaddr_in addr;
-	    socklen_t addr_size = sizeof(addr);
+	    socklen_t addr_size = sizeof(struct sockaddr_in);
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
-	    if (res == 0)
-			wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, addr.sin_port);
+	    if (res == 0) wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, htons(addr.sin_port));
 	}
 	wprintfx(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	toSTR(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			toSTR(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
 			"  Dynamic Rx="		toSTR(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) strNL
-		#elif (CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
+		#endif
+		#if (CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
 			"Wifi: Dynamic Tx="	toSTR(CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM)
 			"  Rx="				toSTR(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM)
 			"  Static Rx="  	toSTR(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) strNL
@@ -759,7 +745,7 @@ void xNetReportStats(report_t * psR) {
 			"  Listen="			toSTR(CONFIG_LWIP_MAX_LISTENING_TCP) strNL
 			"UDP: Max PCBs="	toSTR(CONFIG_LWIP_MAX_UDP_PCBS)
 			"  RxMboxSize=" 	toSTR(CONFIG_UDP_RECVMBOX_SIZE) strNL);
+	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
 	void dbg_lwip_tcp_pcb_show(void); dbg_lwip_tcp_pcb_show();
 	void dbg_lwip_udp_pcb_show(void); dbg_lwip_udp_pcb_show();
-	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
 }
