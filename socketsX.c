@@ -97,6 +97,33 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 	return psC->error ? erFAILURE : erSUCCESS;
 }
 
+/**
+ * @brief	report config, status & data of network connection context specified
+ * @param	psR pointer to report control structure
+ * @param	psC network context to be reported on
+ * @param	pFname name of function invoking the report
+ * @param	Code result code to be evaluated & reported on
+ * @param	pBuf optional pointer to data buffer read/written
+ * @param	xLen optional length of data in the buffer
+ * @return	size of character output generated
+ * @note	DOES lock/unlock console UART
+*/
+int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
+	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
+	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
+	int iRV = wprintfx(psR, "%!.3R %C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
+			 halTIMER_ReadRunTime(), xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
+			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
+			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
+			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
+			(Code < 0) ? pcStrError(Code) : "iRV", Code, psC->trynow,
+			psC->trymax, psC->tOut, (psC->tOut == 0) ? "(BLK)" : (psC->tOut == 1) ? "(NB)" : "mSec",
+			psC->d.val, psC->flags, psC->error);
+	if (psC->d.d && pBuf && xLen) iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
+	if (repFORM_TST(psR,aNL)) iRV += wprintfx(psR, strNL);
+	return iRV;
+}
+
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
 	wprintfx(NULL, "%s Lev=%d '%s' %s:%d" strNL, __FUNCTION__, level, str, level == 4 ? file : strNULL, level == 4 ? line : 0);
@@ -178,35 +205,6 @@ static void vNetMbedDeInit(netx_t * psC) {
 	mbedtls_ssl_config_free(&psC->psSec->conf);
 	mbedtls_ctr_drbg_free(&psC->psSec->ctr_drbg);
 	mbedtls_entropy_free(&psC->psSec->entropy);
-}
-
-/**
- * @brief	report config, status & data of network connection context specified
- * @param	psR pointer to report control structure
- * @param	psC network context to be reported on
- * @param	pFname name of function invoking the report
- * @param	Code result code to be evaluated & reported on
- * @param	pBuf optional pointer to data buffer read/written
- * @param	xLen optional length of data in the buffer
- * @return	size of character output generated
- * @note	DOES lock/unlock console UART
-*/
-int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
-	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
-	int iRV = wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
-			 xpfSGR(0,0,colourFG_CYAN,0), pFname, xpfSGR(0,0,attrRESET,0),
-			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
-			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
-			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
-			Code < erFAILURE ? esp_err_to_name(Code) : (Code > 0) ? "Count" : "iRV", Code, psC->trynow,
-			psC->trymax, psC->tOut, (psC->tOut == 0) ? "(BLK)" : (psC->tOut == 1) ? "(NB)" : "mSec",
-			psC->d.val, psC->flags, psC->error);
-	if (psC->d.d && pBuf && xLen)
-		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
-	if (repFORM_TST(psR,aNL))
-		iRV += wprintfx(psR, strNL);
-	return iRV;
 }
 
 #define OPT_RESOLVE					1
