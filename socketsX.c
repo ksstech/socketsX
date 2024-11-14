@@ -164,8 +164,8 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
  */
 static int xNetMbedInit(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC->psSec));
-
 	psC->error = 0;
+	char * pcName = NULL;
 	#if	(CONFIG_MBEDTLS_DEBUG > 0)
 	const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
 	u8_t Level = XlatSL2TLS[ioB3GET(ioSLOGhi)];
@@ -179,7 +179,6 @@ static int xNetMbedInit(netx_t * psC) {
 	mbedtls_ssl_config_init(&psC->psSec->conf);
 	mbedtls_entropy_init(&psC->psSec->entropy);
 
-	char * pcName = NULL;
 	int iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, NULL, 0);
 	if (iRV != erSUCCESS) { pcName = "mbedtls_ctr_drbg_seed"; goto exit; }
 	if (psC->psSec->pcCert) {
@@ -518,7 +517,6 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	struct timeval	timeVal;
 	timeVal.tv_sec	= psC->tOut / MILLIS_IN_SECOND;
 	timeVal.tv_usec = (psC->tOut * MICROS_IN_MILLISEC) % MICROS_IN_SECOND;
-
 	// do select based on new timeout
 	int iRV = select(psC->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
 									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
