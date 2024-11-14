@@ -149,6 +149,11 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 	return 0;
 }
 
+/**
+ * @brief		initialise a secure connection
+ * @param[in]	psC - pointer to socket context
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
+ */
 static int xNetMbedInit(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC->psSec));
 
@@ -198,6 +203,10 @@ exit:
  	return iRV;
 }
 
+/**
+ * @brief		deinitialise a secure connection
+ * @param[in]	psC - pointer to socket context
+ */
 static void vNetMbedDeInit(netx_t * psC) {
 	mbedtls_net_free(&psC->psSec->server_fd);
 	mbedtls_x509_crt_free(&psC->psSec->cacert);
@@ -209,6 +218,11 @@ static void vNetMbedDeInit(netx_t * psC) {
 
 #define OPT_RESOLVE					1
 
+/**
+ * @brief		
+ * @param[in]	psC - pointer to socket context
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
+ */
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA) return erFAILURE;
@@ -273,6 +287,11 @@ static int xNetGetHost(netx_t * psC) {
 #endif
 }
 
+/**
+ * @brief		
+ * @param[in]	psC - pointer to socket context
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
+ */
 static int xNetSocket(netx_t * psC)  {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
@@ -285,11 +304,17 @@ static int xNetSocket(netx_t * psC)  {
 	return iRV;
 }
 
+/**
+ * @brief		
+ * @param[in]	psC - pointer to socket context
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
+ */
 int xNetSecurePreConnect(netx_t * psC) { return 0; }
 
 /**
- * @brief
- * @return	0 if successful, -1 with error level set if not...
+ * @brief		
+ * @param[in]	psC - pointer to socket context
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
@@ -299,11 +324,11 @@ static int xNetConnect(netx_t * psC) {
 	return iRV;
 }
 
-/*
- * @brief	Configure a socket to be non-blocking or with a specific timeout
- * @param	Socket context to use
- * @param	Timeout to be configured
- * @return	erSUCCESS or a negative error code
+/**
+ * @brief		
+ * @param[in]	psC - pointer to socket context
+ * @param[in]	mSecTime - timeout to be configured
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
@@ -331,6 +356,11 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 	return iRV;
 }
 
+/**
+ * @brief		
+ * @param[in]	psC - pointer to socket context
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
+ */
 int	xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int iRV = erSUCCESS;
@@ -348,6 +378,11 @@ int	xNetBindListen(netx_t * psC) {
 	return iRV;
 }
 
+/**
+ * @brief		
+ * @param[in]	psC - pointer to socket context
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
+ */
 int	xNetSecurePostConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int iRV = mbedtls_ssl_set_hostname(&psC->psSec->ssl, psC->pHost);
@@ -367,10 +402,10 @@ int	xNetSecurePostConnect(netx_t * psC) {
 	return iRV;
 }
 
-/*
- * @brief	open a UDP/TCP socket based on specific parameters
- * @param   psC = pointer to connection context
- * @return	status of last socket operation (ie < erSUCCESS indicates error code)
+/**
+ * @brief		open a UDP/TCP socket based on specific parameters
+ * @param[in]	psC - pointer to socket context
+ * @return		status of last socket operation (ie < erSUCCESS indicates error code)
  */
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
@@ -422,11 +457,10 @@ int	xNetOpen(netx_t * psC) {
 
 /**
  * @brief	
- * @param	psServCtx
- * @param	psClntCtx
- * @param	mSecTime
- * @return	on success file descriptor of the socket (positive value)
- * 			on failure erFAILURE (-1) with error set...
+ * @param[in]	psServCtx
+ * @param[in]	psClntCtx
+ * @param[in]	mSecTime
+ * @return		file descriptor of the socket (positive value) else erFAILURE (-1) with error set...
  */
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psServCtx) && halMemorySRAM(psClntCtx));
