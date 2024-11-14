@@ -397,12 +397,12 @@ int	xNetBindListen(netx_t * psC) {
 int	xNetSecurePostConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
+	u32_t Result;
 	int iRV = mbedtls_ssl_set_hostname(&psC->psSec->ssl, psC->pHost);
 	// OPTIONAL is not recommended for security but makes inter-operability easier
 	mbedtls_ssl_conf_authmode(&psC->psSec->conf, psC->d.ver
 			? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL);
 	if (psC->d.ver) {
-		u32_t Result;
 		iRV = mbedtls_x509_crt_verify(&psC->psSec->cacert, &psC->psSec->cacert,
 			NULL, NULL, &Result, xNetMbedVerify, psC);
 	}
