@@ -521,11 +521,12 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	int iRV = select(psC->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
 									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
 									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
-	if (debugTRACK && psC->d.s)
 	if (iRV < 0) return xNetSyslog(psC, __FUNCTION__);
+	if (debugTRACK && psC->d.s) {
 		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
 								Flag == selFLAG_WRITE ? "write/select" :
 								Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
+	}
 	return iRV;
 }
 
