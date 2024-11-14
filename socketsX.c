@@ -518,9 +518,9 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	timeVal.tv_sec	= psC->tOut / MILLIS_IN_SECOND;
 	timeVal.tv_usec = (psC->tOut * MICROS_IN_MILLISEC) % MICROS_IN_SECOND;
 	// do select based on new timeout
-	int iRV = select(psC->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
-									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
-									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
+	int iRV = select(psC->sd+1, (Flag == selFLAG_READ)	? &fdsSet : 0,
+								(Flag == selFLAG_WRITE) ? &fdsSet : 0,
+								(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
 	if (iRV < 0) return xNetSyslog(psC, __FUNCTION__);
 	if (debugTRACK && psC->d.s) {
 		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
