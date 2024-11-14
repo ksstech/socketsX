@@ -165,6 +165,7 @@ static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *f
 static int xNetMbedInit(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC->psSec));
 
+	psC->error = 0;
 	#if	(CONFIG_MBEDTLS_DEBUG > 0)
 	const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
 	u8_t Level = XlatSL2TLS[ioB3GET(ioSLOGhi)];
@@ -233,6 +234,7 @@ static void vNetMbedDeInit(netx_t * psC) {
  */
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
+	psC->error = 0;
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA) return erFAILURE;
 #if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	// https://sourceware.org/glibc/wiki/NameResolver
@@ -302,6 +304,7 @@ static int xNetGetHost(netx_t * psC) {
  */
 static int xNetSocket(netx_t * psC)  {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
+	psC->error = 0;
 	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
@@ -326,6 +329,7 @@ int xNetSecurePreConnect(netx_t * psC) { return 0; }
  */
 static int xNetConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
+	psC->error = 0;
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
   	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__);
 	if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
@@ -372,6 +376,7 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
 int	xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int iRV = erSUCCESS;
+	psC->error = 0;
 	if (psC->flags & SO_REUSEADDR) {
 		int enable = 1;
 		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
@@ -380,7 +385,6 @@ int	xNetBindListen(netx_t * psC) {
 		iRV = bind(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
 		if (iRV == 0 && psC->type == SOCK_STREAM) iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
 	}
-	psC->error = 0;
 	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__);
 	if (debugTRACK && psC->d.bl) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
@@ -393,6 +397,7 @@ int	xNetBindListen(netx_t * psC) {
  */
 int	xNetSecurePostConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
+	psC->error = 0;
 	int iRV = mbedtls_ssl_set_hostname(&psC->psSec->ssl, psC->pHost);
 	// OPTIONAL is not recommended for security but makes inter-operability easier
 	mbedtls_ssl_conf_authmode(&psC->psSec->conf, psC->d.ver
@@ -404,7 +409,6 @@ int	xNetSecurePostConnect(netx_t * psC) {
 	}
 	mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd,
 			mbedtls_net_send, mbedtls_net_recv, NULL);
-	psC->error = 0;
 	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__);
 	if (debugTRACK && psC->d.sec) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
@@ -472,6 +476,7 @@ int	xNetOpen(netx_t * psC) {
  */
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psServCtx) && halMemorySRAM(psClntCtx));
+	psServCtx->error = 0;
 	// Set host/server RX timeout
 	int iRV = xNetSetRecvTO(psServCtx, mSecTime);
 	if (iRV < 0) return iRV;
@@ -481,7 +486,6 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	// Also need to consider adding a loop to repeat the accept()
 	// in case of EAGAIN or POOL_IS_EMPTY errors
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
-	psServCtx->error = 0;
 	if (iRV < 0) return xNetSyslog(psServCtx, __FUNCTION__);
 	// The server socket had flags set for BIND & LISTEN but the client
 	// socket should just be connected and marked same type & flags
@@ -504,6 +508,7 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
  */
 int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && Flag < selFLAG_NUM);
+	psC->error = 0;
 	// If the timeout is too short dont select() just simulate 1 socket ready...
 	if (psC->tOut <= configXNET_MIN_TIMEOUT) return 1;
 	// Need to add code here to accommodate LwIP & OpenSSL for ESP32
@@ -518,7 +523,6 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	int iRV = select(psC->sd+1 , (Flag == selFLAG_READ)	? &fdsSet : 0,
 									(Flag == selFLAG_WRITE) ? &fdsSet : 0,
 									(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
-	psC->error = 0;
 	if (debugTRACK && psC->d.s)
 	if (iRV < 0) return xNetSyslog(psC, __FUNCTION__);
 		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
@@ -580,6 +584,7 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
  */
 int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemorySRAM(pBuf) && (xLen > 0));
+	psC->error = 0;
 	int	iRV;
 	if (psC->psSec)			iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen);
 	else if (psC->pHost)	iRV = recv(psC->sd, pBuf, xLen, psC->flags);
@@ -587,7 +592,6 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 		socklen_t i16AddrSize = sizeof(struct sockaddr_in);
 		iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 	}
-	psC->error = 0;
 	if (iRV < 0)			return xNetSyslog(psC, __FUNCTION__);
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
 	if (debugTRACK && psC->d.r) xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
