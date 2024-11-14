@@ -180,7 +180,7 @@ static int xNetMbedInit(netx_t * psC) {
 	mbedtls_entropy_init(&psC->psSec->entropy);
 
 	int iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, NULL, 0);
-	if (iRV != erSUCCESS) { pcName = "mbedtls_ctr_drbg_seed"; goto exit; }
+	if (iRV != 0) { pcName = "mbedtls_ctr_drbg_seed"; goto exit; }
 	if (psC->psSec->pcCert) {
 		IF_myASSERT(debugPARAM, halMemoryANY((void *)psC->psSec->pcCert));
 		IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1);
@@ -257,7 +257,7 @@ static int xNetGetHost(netx_t * psC) {
 #elif (OPT_RESOLVE == 2)			// [lwip_]gethostbyname()	UNRELIABLE
 	static SemaphoreHandle_t GetHostMux;
 	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
-	int iRV = erSUCCESS;
+	int iRV = 0;
 	struct hostent * psHE = gethostbyname(psC->pHost);
 //	P("Host=:%s  psHE=%p" strNL, psC->pHost, psHE);
 //	IF_PX(psHE, "Name=%s" strNL, psHE->h_name);
@@ -374,13 +374,13 @@ int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
  */
 int	xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
-	int iRV = erSUCCESS;
 	psC->error = 0;
+	int iRV = 0;
 	if (psC->flags & SO_REUSEADDR) {
 		int enable = 1;
 		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 	}
-	if (iRV == erSUCCESS) {
+	if (iRV == 0) {
 		iRV = bind(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
 		if (iRV == 0 && psC->type == SOCK_STREAM) iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
 	}
