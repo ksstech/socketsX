@@ -52,12 +52,12 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 /**
  * @brief	process socket (incl MBEDTLS) error codes  using syslog functionality
  * @param	psC socket context
- * @param	iRV ESP-IDF error code
  * @return	adjusted error code
  */
-static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
+static int xNetSyslog(netx_t * psC, const char * pFname) {
 	// save error code from network stack
-	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : iRV;
+	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
+	IF_myASSERT(debugTRACK, psC->error != 0);
 	bool fAlloc = 0;
 	char * pcMess = NULL;
 	// Step 1: remap error codes where required
@@ -66,7 +66,8 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN) {
 		psC->error = EAGAIN;
 	}
-	if (psC->error != ENOTCONN && (psC->d.ea || psC->error != EAGAIN)) {
+//	if ((psC->error == EAGAIN && psC->d.ea) || (psC->error != ENOTCONN && psC->error != EAGAIN)) {
+	if ((psC->error == EAGAIN && psC->d.ea) || psC->error != EAGAIN) {
 		// Step 2: Map error code to message
 		if (INRANGE(mbedERROR_SMALLEST, psC->error, mbedERROR_BIGGEST)) {
 			pcMess = malloc(xnetBUFFER_SIZE);
@@ -90,10 +91,9 @@ static int xNetSyslog(netx_t * psC, const char * pFname, int iRV) {
 		 * Hence to ensure Syslog related errors does not get logged, lift the level
 		 */
 		int Level = psC->bSyslog ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
-		vSyslog(Level, pFname, "%s:%d err=%d/x%X (%s) iRV=%d", pHost, ntohs(psC->sa_in.sin_port), psC->error, psC->error, pcMess, iRV);
+		vSyslog(Level, pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, psC->error, psC->error);
+		if (fAlloc) free(pcMess);
 	}
-	if (fAlloc)
-		free(pcMess);
 	return psC->error ? erFAILURE : erSUCCESS;
 }
 
