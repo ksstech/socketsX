@@ -406,8 +406,6 @@ int	xNetSecurePostConnect(netx_t * psC) {
 		if (psC->d.ver) iRV = mbedtls_x509_crt_verify(&psC->psSec->cacert, &psC->psSec->cacert, NULL, NULL, &Result, xNetMbedVerify, psC);
 		if (iRV == 0) mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
 	}
-	mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd,
-			mbedtls_net_send, mbedtls_net_recv, NULL);
 	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__);
 	if (debugTRACK && psC->d.sec) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
