@@ -268,7 +268,7 @@ static int xNetGetHost(netx_t * psC) {
 //	IF_PX(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I" strNL, ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
 	if ((psHE == NULL) || (psHE->h_addrtype != AF_INET) ||
 		(psHE->h_addr_list == NULL) || (psHE->h_addr_list[0] == NULL)) {
-		iRV = xNetSyslog(psC, __FUNCTION__, h_errno);
+		iRV = xNetSyslog(psC, __FUNCTION__);
 	} else {
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
 		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
