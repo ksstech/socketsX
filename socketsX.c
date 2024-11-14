@@ -11,6 +11,14 @@
 #include "systiming.h"
 #include "utilitiesX.h"
 
+#ifdef CONFIG_LWIP_STATS
+	#include "lwip/stats.h"
+#endif
+
+#ifdef CONFIG_LWIP_DEBUG
+	#include "lwip/debug.h"
+#endif
+
 #ifdef	CONFIG_MBEDTLS_DEBUG
 	#include "mbedtls/debug.h"
 #endif
@@ -700,7 +708,7 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 void xNetReportStats(report_t * psR) {
 	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
 	    struct sockaddr_in addr;
-	    socklen_t addr_size = sizeof(addr);
+	    socklen_t addr_size = sizeof(struct sockaddr_in);
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0) wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, htons(addr.sin_port));
@@ -710,7 +718,8 @@ void xNetReportStats(report_t * psR) {
 			"Wifi: Static Tx="	toSTR(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			toSTR(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
 			"  Dynamic Rx="		toSTR(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM) strNL
-		#elif (CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
+		#endif
+		#if (CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER == 1)
 			"Wifi: Dynamic Tx="	toSTR(CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM)
 			"  Rx="				toSTR(CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM)
 			"  Static Rx="  	toSTR(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM) strNL
@@ -721,7 +730,7 @@ void xNetReportStats(report_t * psR) {
 			"  Listen="			toSTR(CONFIG_LWIP_MAX_LISTENING_TCP) strNL
 			"UDP: Max PCBs="	toSTR(CONFIG_LWIP_MAX_UDP_PCBS)
 			"  RxMboxSize=" 	toSTR(CONFIG_UDP_RECVMBOX_SIZE) strNL);
+	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
 	void dbg_lwip_tcp_pcb_show(void); dbg_lwip_tcp_pcb_show();
 	void dbg_lwip_udp_pcb_show(void); dbg_lwip_udp_pcb_show();
-	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
 }
