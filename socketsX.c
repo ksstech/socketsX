@@ -280,16 +280,12 @@ static int xNetGetHost(netx_t * psC) {
 #elif (OPT_RESOLVE == 3)			// netconn_gethostbyname_addrtype()
 	ip_addr_t addr;
 	int iRV = netconn_gethostbyname_addrtype(psC->pHost, &addr, AF_INET);
-	if (iRV == ERR_OK) {
 	PX("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d" strNL, psC->pHost, iRV, addr.type, sizeof(struct sockaddr_storage), sizeof(struct sockaddr), sizeof(struct sockaddr_in));
-		struct sockaddr_in * psSAI = &psC->sa_in;
-//		psC->sa_in.sin_addr.s_addr = addr.u_addr.ip4.addr;
-		psSAI->sin_addr.s_addr = addr.u_addr.ip4.addr;
-	} else {
-		TRACK();
-		iRV = xNetSyslog(psC, __FUNCTION__, iRV);
-		if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
-	}
+	if (iRV != 0)					return xNetSyslog(psC, __FUNCTION__);
+	struct sockaddr_in * psSAI = &psC->sa_in;
+//	psC->sa_in.sin_addr.s_addr = addr.u_addr.ip4.addr;
+	psSAI->sin_addr.s_addr = addr.u_addr.ip4.addr;
+	if (debugTRACK && psC->d.h)		xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	return iRV;
 #endif
 }
