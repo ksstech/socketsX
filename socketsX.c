@@ -286,11 +286,10 @@ static int xNetGetHost(netx_t * psC) {
 		struct sockaddr_in * psSAI = &psC->sa_in;
 //		psC->sa_in.sin_addr.s_addr = addr.u_addr.ip4.addr;
 		psSAI->sin_addr.s_addr = addr.u_addr.ip4.addr;
-		if (debugTRACK && psC->d.h)
-			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	} else {
 		TRACK();
 		iRV = xNetSyslog(psC, __FUNCTION__, iRV);
+		if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	}
 	return iRV;
 #endif
