@@ -119,8 +119,10 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
 	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
 	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
-	int iRV = wprintfx(psR, "%!.3R %C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
-			 halTIMER_ReadRunTime(), xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
+	int iRV = 0;
+	if (psR == NULL) iRV += wprintfx(psR, "%!.3R ", halTIMER_ReadRunTime());
+	iRV += wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
+			xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
