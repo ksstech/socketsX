@@ -49,8 +49,8 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 		else									ttWait = u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
 	}
 	do {
-		if (xRtosCheckStatus(flagLX_STA))			return flagLX_STA;
-		if (xRtosCheckStatus(flagL1|flagL2_SAP))	return flagLX_SAP;
+		if (xRtosCheckStat0(flagLX_STA))			return flagLX_STA;
+		if (xRtosCheckStat0(flagL1|flagL2_SAP))		return flagLX_SAP;
 		vTaskDelay(xnetSTEP);
 		if (ttWait != portMAX_DELAY)				ttWait -= xnetSTEP;
 	} while (ttWait);
