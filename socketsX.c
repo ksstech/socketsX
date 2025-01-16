@@ -98,7 +98,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 		 * not attempt to go out the network, which would bring it back here
 		 * Hence to ensure Syslog related errors does not get logged, lift the level
 		 */
-		int Level = psC->bSyslog ? ioB3GET(ioSLhost) + 1 : SL_SEV_ERROR;
+		int Level = psC->bSyslog ? xSyslogGetConsoleLevel() : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, psC->error, psC->error);
 		if (fAlloc) free(pcMess);
 	}
@@ -170,7 +170,7 @@ static int xNetMbedInit(netx_t * psC) {
 	char * pcName = NULL;
 	#if	(CONFIG_MBEDTLS_DEBUG > 0)
 	const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
-	u8_t Level = XlatSL2TLS[ioB3GET(ioSLOGhi)];
+	u8_t Level = XlatSL2TLS[xSyslogGetConsoleLevel()];
 	mbedtls_debug_set_threshold(Level);
 	mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
 	#endif
