@@ -6,7 +6,7 @@
 #include "hal_options.h"
 #include "errors_events.h"
 #include "socketsX.h"
-#include "printfx.h"									// +x_definitions +stdarg +stdint +stdio
+#include "printfx.h"
 #include "syslog.h"
 #include "systiming.h"
 #include "utilitiesX.h"
@@ -27,7 +27,6 @@
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
-
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
 #define	debugPARAM					(debugFLAG_GLOBAL & debugFLAG & 0x4000)
@@ -40,7 +39,9 @@
 #define xnetSTEP					pdMS_TO_TICKS(10)
 
 // ######################################## Local constants ########################################
+
 // ####################################### Private variables #######################################
+
 // ###################################### Local only functions #####################################
 
 EventBits_t xNetWaitLx(TickType_t ttWait) {
@@ -256,7 +257,7 @@ static int xNetGetHost(netx_t * psC) {
 	if (psAI != NULL) freeaddrinfo(psAI);
 	return iRV;
 
-#elif (OPT_RESOLVE == 2)			// [lwip_]gethostbyname()	UNRELIABLE
+#elif (OPT_RESOLVE == 2)			// gethostbyname()			UNRELIABLE
 	static SemaphoreHandle_t GetHostMux;
 	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
 	int iRV = 0;
@@ -417,6 +418,7 @@ int	xNetOpen(netx_t * psC) {
 	int	iRV;
 	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(10000));
 	if (ebX != flagLX_STA && ebX != flagLX_SAP)	return erFAILURE;
+
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
@@ -425,6 +427,7 @@ int	xNetOpen(netx_t * psC) {
 			return iRV;
 		}
 	}
+
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psC->pHost) {									// Client type connection ?
 		iRV = xNetGetHost(psC);
