@@ -333,9 +333,9 @@ static int xNetConnect(netx_t * psC) {
 }
 
 /**
- * @brief		
- * @param[in]	psC - pointer to socket context
- * @param[in]	mSecTime - timeout to be configured
+ * @brief		set connection receive timeout
+ * @param[in]	psC pointer to socket context
+ * @param[in]	mSecTime timeout to be configured
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
@@ -410,7 +410,7 @@ int	xNetSecurePostConnect(netx_t * psC) {
 
 /**
  * @brief		open a UDP/TCP socket based on specific parameters
- * @param[in]	psC - pointer to socket context
+ * @param[in]	psC pointer to socket context
  * @return		status of last socket operation (ie < erSUCCESS indicates error code)
  */
 int	xNetOpen(netx_t * psC) {
