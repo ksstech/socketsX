@@ -131,7 +131,8 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			psC->trymax, psC->tOut, (psC->tOut == 0) ? "(BLK)" : (psC->tOut == 1) ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
 	if (psC->d.d && pBuf && xLen) iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
-	if (repFORM_TST(psR,aNL)) iRV += wprintfx(psR, strNL);
+	if (fmTST(aNL))
+		iRV += wprintfx(psR, strNL);
 	return iRV;
 }
 
