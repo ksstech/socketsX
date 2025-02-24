@@ -118,8 +118,8 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
  * @note	DOES lock/unlock console UART
 */
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
 	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
+	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : (IPaddr == nvsWifi.ipSTA) ? "localhost" : "unknown";
 	int iRV = 0;
 	if (psR == NULL)
 		iRV += wprintfx(psR, "%!.3R ", halTIMER_ReadRunTime());
