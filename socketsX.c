@@ -121,7 +121,8 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
 	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
 	int iRV = 0;
-	if (psR == NULL) iRV += wprintfx(psR, "%!.3R ", halTIMER_ReadRunTime());
+	if (psR == NULL)
+		iRV += wprintfx(psR, "%!.3R ", halTIMER_ReadRunTime());
 	iRV += wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
 			xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
@@ -130,7 +131,8 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			(Code < 0) ? pcStrError(Code) : "iRV", Code, psC->trynow,
 			psC->trymax, psC->tOut, (psC->tOut == 0) ? "(BLK)" : (psC->tOut == 1) ? "(NB)" : "mSec",
 			psC->d.val, psC->flags, psC->error);
-	if (psC->d.d && pBuf && xLen) iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
+	if (psC->d.d && pBuf && xLen)
+		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
 	if (fmTST(aNL))
 		iRV += wprintfx(psR, strNL);
 	return iRV;
