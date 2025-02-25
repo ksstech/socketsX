@@ -34,6 +34,7 @@
 
 // ######################################## Build macros ###########################################
 
+#define netxBUILD_SPC				0					// en/disable Secure PreConnect support
 #define netxRESOLVE					1
 
 #define	xnetBUFFER_SIZE 			1024
@@ -352,12 +353,14 @@ static int xNetSocket(netx_t * psC)  {
 	return iRV;
 }
 
+#if	(netxBUILD_SPC == 1)
 /**
  * @brief		
  * @param[in]	psC - pointer to socket context
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 int xNetSecurePreConnect(netx_t * psC) { return 0; }
+#endif
 
 /**
  * @brief		
