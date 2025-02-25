@@ -126,7 +126,8 @@ typedef struct __attribute__((aligned(4))) netx_t {
 		u8_t trynow;				// times tried
 		u8_t type:3;				// valid 1->5, STREAM/TCP, DGRAM/UDP or RAW/RAW
 		u8_t bSyslog:1;				// call from syslog, change level in xNetGetError()
-		u16_t spare:12;
+		u8_t ReConnect:2;			// 0=disable 1~3=automatic reconnection attempts
+		u16_t spare:10	;
 	};
 	union netx_dbg_u {				// debug control flags
 		struct __attribute__((packed)) {
