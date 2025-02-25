@@ -359,7 +359,7 @@ static int xNetSocket(netx_t * psC)  {
  * @param[in]	psC - pointer to socket context
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
-int xNetSecurePreConnect(netx_t * psC) { return 0; }
+static int xNetSecurePreConnect(netx_t * psC) { return 0; }
 #endif
 
 /**
@@ -379,7 +379,7 @@ static int xNetConnect(netx_t * psC) {
  * @param[in]	psC - pointer to socket context
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
-int	xNetBindListen(netx_t * psC) {
+static int xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
 	int iRV = 0;
@@ -404,8 +404,8 @@ int	xNetBindListen(netx_t * psC) {
  * @param[in]	psC - pointer to socket context
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
-int	xNetSecurePostConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
+static int xNetSecurePostConnect(netx_t * psC) {
 	psC->error = 0;
 	u32_t Result;
 	int iRV = mbedtls_ssl_set_hostname(&psC->psSec->ssl, psC->pHost);
