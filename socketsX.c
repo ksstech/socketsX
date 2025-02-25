@@ -159,10 +159,10 @@ static int xNetMbedInit(netx_t * psC) {
 	psC->error = 0;
 	char * pcName = NULL;
 	#if	(CONFIG_MBEDTLS_DEBUG > 0)
-	const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
-	u8_t Level = XlatSL2TLS[xSyslogGetConsoleLevel()];
-	mbedtls_debug_set_threshold(Level);
-	mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
+		const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
+		u8_t Level = XlatSL2TLS[xSyslogGetConsoleLevel()];
+		mbedtls_debug_set_threshold(Level);
+		mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
 	#endif
 
 	mbedtls_ssl_init(&psC->psSec->ssl);
@@ -172,16 +172,25 @@ static int xNetMbedInit(netx_t * psC) {
 	mbedtls_entropy_init(&psC->psSec->entropy);
 
 	int iRV = mbedtls_ctr_drbg_seed(&psC->psSec->ctr_drbg, mbedtls_entropy_func, &psC->psSec->entropy, NULL, 0);
-	if (iRV != 0) { pcName = "mbedtls_ctr_drbg_seed"; goto exit; }
+	if (iRV != 0) {
+		pcName = "mbedtls_ctr_drbg_seed";
+		goto exit;
+	}
 	if (psC->psSec->pcCert) {
 		IF_myASSERT(debugPARAM, halMemoryANY((void *)psC->psSec->pcCert));
 		IF_myASSERT(debugPARAM, psC->psSec->szCert == strlen((const char *)psC->psSec->pcCert) + 1);
 		iRV = mbedtls_x509_crt_parse(&psC->psSec->cacert, (pcuc_t) psC->psSec->pcCert, psC->psSec->szCert);
-		if (iRV != 0) { pcName = "mbedtls_x509_crt_parse"; goto exit; }
+		if (iRV != 0) {
+			pcName = "mbedtls_x509_crt_parse";
+			goto exit;
+		}
 	} else {
 		#ifdef CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 		iRV = esp_crt_bundle_attach(&psC->psSec->conf);
-		if (iRV != erSUCCESS) { pcName = "esp_crt_bundle_attach"; goto exit; }
+		if (iRV != erSUCCESS) {
+			pcName = "esp_crt_bundle_attach";
+			goto exit;
+		}
 		#endif
 	}
 
@@ -190,16 +199,23 @@ static int xNetMbedInit(netx_t * psC) {
 			psC->pHost ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
 			psC->type == SOCK_STREAM ? MBEDTLS_SSL_TRANSPORT_STREAM : MBEDTLS_SSL_TRANSPORT_DATAGRAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
-	if (iRV != 0) { pcName = "mbedtls_ssl_config_defaults"; goto exit; }
+	if (iRV != 0) {
+		pcName = "mbedtls_ssl_config_defaults";
+		goto exit;
+	}
 	
-	if (psC->d.ver) mbedtls_ssl_conf_authmode(&psC->psSec->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+	if (psC->d.ver)
+		mbedtls_ssl_conf_authmode(&psC->psSec->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
 	mbedtls_ssl_conf_ca_chain(&psC->psSec->conf, &psC->psSec->cacert, NULL);
 	mbedtls_ssl_conf_rng( &psC->psSec->conf, mbedtls_ctr_drbg_random, &psC->psSec->ctr_drbg);
 	iRV = mbedtls_ssl_setup(&psC->psSec->ssl, &psC->psSec->conf);
-	if (iRV != 0)	pcName = "mbedtls_ssl_setup";
-	else			mbedtls_net_init(&psC->psSec->server_fd);
+	if (iRV != 0)
+		pcName = "mbedtls_ssl_setup";
+	else
+		mbedtls_net_init(&psC->psSec->server_fd);
 exit:
-	if (iRV != 0 || pcName) return xNetSyslog(psC, pcName);
+	if (iRV != 0 || pcName)
+		return xNetSyslog(psC, pcName);
  	return iRV;
 }
 
@@ -226,8 +242,9 @@ static void vNetMbedDeInit(netx_t * psC) {
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
-	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA) return erFAILURE;
 #if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
+	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
+		return erFAILURE;
 	// https://sourceware.org/glibc/wiki/NameResolver
 	// https://github.com/espressif/esp-idf/issues/5521
 	struct addrinfo * psAI;
@@ -237,13 +254,16 @@ static int xNetGetHost(netx_t * psC) {
 	char portnum[16];
 	snprintfx(portnum, sizeof(portnum), "%u", ntohs(psC->sa_in.sin_port));
 	int iRV = getaddrinfo(psC->pHost, portnum, &sAI, &psAI);
-	if (iRV != 0 || psAI == NULL)	iRV = xNetSyslog(psC, __FUNCTION__);
+	if (iRV != 0 || psAI == NULL)
+		iRV = xNetSyslog(psC, __FUNCTION__);
 	else {
 		struct sockaddr_in * sa_in = (struct sockaddr_in *) psAI->ai_addr;
 		psC->sa_in.sin_addr.s_addr = sa_in->sin_addr.s_addr;
-		if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
+		if (debugTRACK && psC->d.h)
+			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	}
-	if (psAI != NULL) freeaddrinfo(psAI);
+	if (psAI != NULL)
+		freeaddrinfo(psAI);
 	return iRV;
 
 #elif (OPT_RESOLVE == 2)			// gethostbyname()			UNRELIABLE
@@ -264,7 +284,8 @@ static int xNetGetHost(netx_t * psC) {
 	} else {
 		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
 		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
-		if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
+		if (debugTRACK && psC->d.h)
+			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	}
 	xRtosSemaphoreGive(&GetHostMux);
 	return iRV;
@@ -273,11 +294,13 @@ static int xNetGetHost(netx_t * psC) {
 	ip_addr_t addr;
 	int iRV = netconn_gethostbyname_addrtype(psC->pHost, &addr, AF_INET);
 	PX("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d" strNL, psC->pHost, iRV, addr.type, sizeof(struct sockaddr_storage), sizeof(struct sockaddr), sizeof(struct sockaddr_in));
-	if (iRV != 0)					return xNetSyslog(psC, __FUNCTION__);
+	if (iRV != 0)
+		return xNetSyslog(psC, __FUNCTION__);
 	struct sockaddr_in * psSAI = &psC->sa_in;
 //	psC->sa_in.sin_addr.s_addr = addr.u_addr.ip4.addr;
 	psSAI->sin_addr.s_addr = addr.u_addr.ip4.addr;
-	if (debugTRACK && psC->d.h)		xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
+	if (debugTRACK && psC->d.h)
+		xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
 	return iRV;
 #endif
 }
@@ -293,10 +316,13 @@ static int xNetSocket(netx_t * psC)  {
 	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
-	if (iRV < 0) return xNetSyslog(psC, __FUNCTION__);
+	if (iRV < 0)
+		return xNetSyslog(psC, __FUNCTION__);
 	psC->sd = (i16_t) iRV;
-	if (psC->psSec) psC->psSec->server_fd.fd = iRV;
-	if (debugTRACK && psC->d.o) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (psC->psSec)
+		psC->psSec->server_fd.fd = iRV;
+	if (debugTRACK && psC->d.o)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -368,10 +394,13 @@ int	xNetBindListen(netx_t * psC) {
 	}
 	if (iRV == 0) {
 		iRV = bind(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
-		if (iRV == 0 && psC->type == SOCK_STREAM) iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
+		if (iRV == 0 && psC->type == SOCK_STREAM)
+			iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
 	}
-	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__);
-	if (debugTRACK && psC->d.bl) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (iRV != 0)
+		return xNetSyslog(psC, __FUNCTION__);
+	if (debugTRACK && psC->d.bl)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -389,11 +418,15 @@ int	xNetSecurePostConnect(netx_t * psC) {
 		// OPTIONAL is not recommended for security but makes inter-operability easier
 		mbedtls_ssl_conf_authmode(&psC->psSec->conf, psC->d.ver ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL);
 		// Enable certificate verification, if requested
-		if (psC->d.ver) iRV = mbedtls_x509_crt_verify(&psC->psSec->cacert, &psC->psSec->cacert, NULL, NULL, &Result, xNetMbedVerify, psC);
-		if (iRV == 0) mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
+		if (psC->d.ver)
+			iRV = mbedtls_x509_crt_verify(&psC->psSec->cacert, &psC->psSec->cacert, NULL, NULL, &Result, xNetMbedVerify, psC);
+		if (iRV == 0)
+			mbedtls_ssl_set_bio(&psC->psSec->ssl, &psC->psSec->server_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
 	}
-	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__);
-	if (debugTRACK && psC->d.sec) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (iRV != 0)
+		return xNetSyslog(psC, __FUNCTION__);
+	if (debugTRACK && psC->d.sec)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -421,7 +454,8 @@ int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV;
 	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(10000));
-	if (ebX != flagLX_STA && ebX != flagLX_SAP)	return erFAILURE;
+	if (ebX != flagLX_STA && ebX != flagLX_SAP)
+		return erFAILURE;
 
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
@@ -435,35 +469,42 @@ int	xNetOpen(netx_t * psC) {
 	// STEP 1: if connecting as client, resolve the host name & IP address
 	if (psC->pHost) {									// Client type connection ?
 		iRV = xNetGetHost(psC);
-		if (iRV < erSUCCESS)				return iRV;
+		if (iRV < erSUCCESS)
+			return iRV;
 	} else {
 		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psC);
-	if (iRV < erSUCCESS)					return iRV;
+	if (iRV < erSUCCESS)
+		return iRV;
 	if (psC->soRcvTO) {
 		iRV = xNetSetRecvTO(psC, psC->soRcvTO);
-		if (iRV < erSUCCESS)				return iRV;
+		if (iRV < erSUCCESS)
+			return iRV;
 	}
 #if	(netxBUILD_SPC == 1)
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePreConnect(psC);
-		if (iRV < erSUCCESS)				return iRV;
+		if (iRV < erSUCCESS)
+			return iRV;
 	}
 #endif
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
-	if (iRV < erSUCCESS)					return iRV;
+	if (iRV < erSUCCESS)
+		return iRV;
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePostConnect(psC);
-		if (iRV < erSUCCESS)				return iRV;
+		if (iRV < erSUCCESS)
+			return iRV;
 	}
-	if (debugTRACK && psC->d.o)				xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	if (debugTRACK && psC->d.o)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -594,7 +635,8 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	}
 	if (iRV < 0)			return xNetSyslog(psC, __FUNCTION__);
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
-	if (debugTRACK && psC->d.r) xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugTRACK && psC->d.r)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
