@@ -267,7 +267,6 @@ static void vNetMbedDeInit(netx_t * psC) {
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetGetHost(netx_t * psC) {
-	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
 		return erFAILURE;
@@ -338,7 +337,6 @@ static int xNetGetHost(netx_t * psC) {
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetSocket(netx_t * psC)  {
-	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
 	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
@@ -368,7 +366,6 @@ static int xNetSecurePreConnect(netx_t * psC) { return 0; }
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetConnect(netx_t * psC) {
-	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
 	return iRV;
@@ -404,7 +401,6 @@ static int xNetBindListen(netx_t * psC) {
  * @param[in]	psC - pointer to socket context
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
-	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 static int xNetSecurePostConnect(netx_t * psC) {
 	psC->error = 0;
 	u32_t Result;
