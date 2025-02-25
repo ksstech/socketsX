@@ -160,7 +160,6 @@ typedef union netx_dbg_u netx_dbg_t;
 
 // ####################################### Global Functions ########################################
 
-void xNetRestartStack( void );
 /**
  * @brief
  * @param[in]

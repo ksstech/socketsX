@@ -44,8 +44,6 @@
 
 // ######################################## Local constants ########################################
 
-// ####################################### Private variables #######################################
-
 // ###################################### Local only functions #####################################
 
 /**
@@ -368,6 +366,10 @@ static int xNetSecurePreConnect(netx_t * psC) { return 0; }
 static int xNetConnect(netx_t * psC) {
 	psC->error = 0;
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
+  	if (iRV != 0)
+		return xNetSyslog(psC, __FUNCTION__);
+	if (debugTRACK && psC->d.h)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
