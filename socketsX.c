@@ -34,6 +34,8 @@
 
 // ######################################## Build macros ###########################################
 
+#define netxRESOLVE					1
+
 #define	xnetBUFFER_SIZE 			1024
 #define xnetMS_WAIT_LX				10000
 #define	xnetMS_GETHOST				10000
@@ -258,8 +260,6 @@ static void vNetMbedDeInit(netx_t * psC) {
 	mbedtls_entropy_free(&psC->psSec->entropy);
 }
 
-#define OPT_RESOLVE					1
-
 /**
  * @brief		
  * @param[in]	psC - pointer to socket context
@@ -268,9 +268,9 @@ static void vNetMbedDeInit(netx_t * psC) {
 static int xNetGetHost(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
-#if (OPT_RESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
 		return erFAILURE;
+#if (netxRESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	// https://sourceware.org/glibc/wiki/NameResolver
 	// https://github.com/espressif/esp-idf/issues/5521
 	struct addrinfo * psAI;
@@ -292,7 +292,7 @@ static int xNetGetHost(netx_t * psC) {
 		freeaddrinfo(psAI);
 	return iRV;
 
-#elif (OPT_RESOLVE == 2)			// gethostbyname()			UNRELIABLE
+#elif (netxRESOLVE == 2)			// gethostbyname()			UNRELIABLE
 	static SemaphoreHandle_t GetHostMux;
 	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
 	int iRV = 0;
@@ -316,7 +316,7 @@ static int xNetGetHost(netx_t * psC) {
 	xRtosSemaphoreGive(&GetHostMux);
 	return iRV;
 
-#elif (OPT_RESOLVE == 3)			// netconn_gethostbyname_addrtype()
+#elif (netxRESOLVE == 3)			// netconn_gethostbyname_addrtype()
 	ip_addr_t addr;
 	int iRV = netconn_gethostbyname_addrtype(psC->pHost, &addr, AF_INET);
 	PX("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d" strNL, psC->pHost, iRV, addr.type, sizeof(struct sockaddr_storage), sizeof(struct sockaddr), sizeof(struct sockaddr_in));
