@@ -44,20 +44,6 @@
 
 // ###################################### Local only functions #####################################
 
-EventBits_t xNetWaitLx(TickType_t ttWait) {
-	if (ttWait != portMAX_DELAY) {
-		if (pdMS_TO_TICKS(ttWait) <= xnetSTEP)	ttWait = xnetSTEP;
-		else									ttWait = u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
-	}
-	do {
-		if (halEventCheckStatus(flagLX_STA))			return flagLX_STA;
-		if (halEventCheckStatus(flagL1|flagL2_SAP))		return flagLX_SAP;
-		vTaskDelay(xnetSTEP);
-		if (ttWait != portMAX_DELAY)				ttWait -= xnetSTEP;
-	} while (ttWait);
-	return 0;
-}
-
 /**
  * @brief	process socket (incl MBEDTLS) error codes  using syslog functionality
  * @param	psC socket context
@@ -416,6 +402,21 @@ int	xNetSecurePostConnect(netx_t * psC) {
  * @param[in]	psC pointer to socket context
  * @return		status of last socket operation (ie < erSUCCESS indicates error code)
  */
+EventBits_t xNetWaitLx(TickType_t ttWait) {
+	if (ttWait != portMAX_DELAY)
+		ttWait = (pdMS_TO_TICKS(ttWait) <= xnetSTEP) ? xnetSTEP : u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
+	do {
+		if (halEventCheckStatus(flagLX_STA))
+			return flagLX_STA;
+		if (halEventCheckStatus(flagL1|flagL2_SAP))
+			return flagLX_SAP;
+		vTaskDelay(xnetSTEP);
+		if (ttWait != portMAX_DELAY)
+			ttWait -= xnetSTEP;
+	} while (ttWait);
+	return 0;
+}
+
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV;
