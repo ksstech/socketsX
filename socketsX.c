@@ -371,40 +371,6 @@ static int xNetConnect(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	psC->error = 0;
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
-  	if (iRV != 0) return xNetSyslog(psC, __FUNCTION__);
-	if (debugTRACK && psC->d.h) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
-	return iRV;
-}
-
-/**
- * @brief		set connection receive timeout
- * @param[in]	psC pointer to socket context
- * @param[in]	mSecTime timeout to be configured
- * @return		erSUCCESS or erFAILURE with psC->error set to the code
- */
-int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
-	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
-	psC->error = 0;
-	if (psC->tOut == mSecTime) return erSUCCESS;		// nothing to do, already correct
-	psC->tOut = mSecTime;
-	int iRV;
-	if (mSecTime <= flagXNET_NONBLOCK) {
-		iRV = ioctl(psC->sd, FIONBIO, &mSecTime);		// 0 = Disable, 1+ = Enable NonBlocking
-	} else {
-		struct timeval timeVal;
-		timeVal.tv_sec	= mSecTime / MILLIS_IN_SECOND;
-		timeVal.tv_usec = (mSecTime * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND;
-		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal));
-		if (debugTRACK && psC->d.t) {
-			socklen_t SockOptLen;
-			SockOptLen = sizeof(timeVal);
-			getsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen);
-			u32_t tTest = (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC);
-			myASSERT(tTest == mSecTime);
-		}
-	}
-	if (iRV < 0) return xNetSyslog(psC, __FUNCTION__);
-	if (debugTRACK && psC->d.t) xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
 
@@ -530,6 +496,35 @@ int	xNetOpen(netx_t * psC) {
 			return iRV;
 	}
 	if (debugTRACK && psC->d.o)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
+	return iRV;
+}
+
+int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime) {
+	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
+	psC->error = 0;
+	if (psC->tOut == mSecTime)
+		return erSUCCESS;			// nothing to do, already correct
+	psC->tOut = mSecTime;
+	int iRV;
+	if (mSecTime <= flagXNET_NONBLOCK) {
+		iRV = ioctl(psC->sd, FIONBIO, &mSecTime);		// 0 = Disable, 1+ = Enable NonBlocking
+	} else {
+		struct timeval timeVal;
+		timeVal.tv_sec	= mSecTime / MILLIS_IN_SECOND;
+		timeVal.tv_usec = (mSecTime * MICROS_IN_MILLISEC ) % MICROS_IN_SECOND;
+		iRV = setsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, sizeof(timeVal));
+		if (debugTRACK && psC->d.t) {
+			socklen_t SockOptLen;
+			SockOptLen = sizeof(timeVal);
+			getsockopt(psC->sd, SOL_SOCKET, SO_RCVTIMEO, &timeVal, &SockOptLen);
+			u32_t tTest = (timeVal.tv_sec * MILLIS_IN_SECOND) + (timeVal.tv_usec / MICROS_IN_MILLISEC);
+			myASSERT(tTest == mSecTime);
+		}
+	}
+	if (iRV < 0)
+		return xNetSyslog(psC, __FUNCTION__);
+	if (debugTRACK && psC->d.t)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
 }
