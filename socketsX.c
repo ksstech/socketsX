@@ -430,11 +430,8 @@ int	xNetSecurePostConnect(netx_t * psC) {
 	return iRV;
 }
 
-/**
- * @brief		open a UDP/TCP socket based on specific parameters
- * @param[in]	psC pointer to socket context
- * @return		status of last socket operation (ie < erSUCCESS indicates error code)
- */
+// ######################################## Public functions #######################################
+
 EventBits_t xNetWaitLx(TickType_t ttWait) {
 	if (ttWait != portMAX_DELAY)
 		ttWait = (pdMS_TO_TICKS(ttWait) <= xnetSTEP) ? xnetSTEP : u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
@@ -508,13 +505,6 @@ int	xNetOpen(netx_t * psC) {
 	return iRV;
 }
 
-/**
- * @brief	
- * @param[in]	psServCtx
- * @param[in]	psClntCtx
- * @param[in]	mSecTime
- * @return		file descriptor of the socket (positive value) else erFAILURE (-1) with error set...
- */
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psServCtx) && halMemorySRAM(psClntCtx));
 	psServCtx->error = 0;
@@ -541,12 +531,6 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	return iRV;
 }
 
-/**
- * @brief	Used with write() to minimise the wait time...
- * @param	psC - network connection context
- * @param	Flag - 
- * @return
- */
 int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && Flag < selFLAG_NUM);
 	psC->error = 0;
@@ -572,11 +556,6 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	return iRV;
 }
 
-/**
- * @brief	the socket connection
- * @param	psC = pointer to connection context
- * @return	result of the close (ie < erSUCCESS indicate error code)
- */
 int	xNetClose(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV = erSUCCESS;
@@ -595,13 +574,6 @@ int	xNetClose(netx_t * psC) {
 
 // ##################################### Basic Send/Receive ########################################
 
-/**
- * @brief	Write data to host based on connection context
- * @param	psC	pointer to connection context
- * @param	pBuf pointer to the buffer to write from
- * @param	xLen number of bytes in buffer to send
- * @return	0->xLen indicating number of bytes sent else error negative error code
- */
 int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemoryANY(pBuf) &&  xLen > 0);
@@ -616,13 +588,6 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	return iRV;
 }
 
-/**
- * @brief
- * @param	psC	pointer to connection context
- * @param	pBuf pointer to the buffer to read into
- * @param	xLen size of buffer ie max bytes to receive
- * @return	0->xLen indicating number of bytes received else negative error code
- */
 int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemorySRAM(pBuf) && (xLen > 0));
 	psC->error = 0;

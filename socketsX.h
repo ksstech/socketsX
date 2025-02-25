@@ -157,30 +157,88 @@ typedef union netx_dbg_u netx_dbg_t;
 
 // ####################################### Global variables ########################################
 
-
 // ####################################### Global Functions ########################################
 
 void xNetRestartStack( void );
+/**
+ * @brief
+ * @param[in]
+ * @return
+ */
 EventBits_t xNetWaitLx(TickType_t xTicks);
-int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime);
-int	xNetSelect(netx_t * psConn, u8_t Flag);
+
+/**
+ * @brief		open a UDP/TCP socket based on specific parameters
+ * @param[in]	psC pointer to socket context
+ * @return		status of last socket operation (ie < erSUCCESS indicates error code)
+ */
 int	xNetOpen(netx_t * psConn);
+
+/**
+ * @brief		set connection receive timeout
+ * @param[in]	psC pointer to socket context
+ * @param[in]	mSecTime timeout to be configured
+ * @return		erSUCCESS or erFAILURE with psC->error set to the code
+ */
+int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime);
+
+/**
+ * @brief	
+ * @param[in]	psServCtx
+ * @param[in]	psClntCtx
+ * @param[in]	mSecTime
+ * @return		file descriptor of the socket (positive value) else erFAILURE (-1) with error set...
+ */
 int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime);
 
-// read/write with traditional buffers
+/**
+ * @brief	Used with write() to minimise the wait time...
+ * @param	psC - network connection context
+ * @param	Flag - 
+ * @return
+ */
+int	xNetSelect(netx_t * psConn, u8_t Flag);
+
+/**
+ * @brief	close the socket connection
+ * @param	psC = pointer to connection context
+ * @return	result of the close (ie < erSUCCESS indicate error code)
+ */
+int	xNetClose(netx_t * psConn);
+
+/**
+ * @brief	Write data to host based on connection context
+ * @param	psC	pointer to connection context
+ * @param	pBuf pointer to the buffer to write from
+ * @param	xLen number of bytes in buffer to send
+ * @return	0->xLen indicating number of bytes sent else error negative error code
+ */
 int	xNetSend(netx_t * psConn, u8_t * pBuf, int xLen);
-int	xNetSendBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
+
+/**
+ * @brief
+ * @param	psC	pointer to connection context
+ * @param	pBuf pointer to the buffer to read into
+ * @param	xLen size of buffer ie max bytes to receive
+ * @return	0->xLen indicating number of bytes received else negative error code
+ */
 int	xNetRecv(netx_t * psConn, u8_t * pBuf, int xLen);
+
+// ##################################### Block Send/Receive ########################################
+
+int	xNetSendBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
+
 int	xNetRecvBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
 
-// read/write using managed buffers
-int	xNetSendUBuf(netx_t *, ubuf_t *, u32_t);
-int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
+// ###################################### uBuf Send/Receive ########################################
 
-int	xNetClose(netx_t * psConn);
+int	xNetSendUBuf(netx_t *, ubuf_t *, u32_t);
+
+int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
 
 struct report_t;
 int	xNetReport(struct report_t * psR, netx_t * psConn, const char * pFname, int Code, void * pBuf, int xLen);
+
 void xNetReportStats(struct report_t * psR);
 
 #ifdef __cplusplus
