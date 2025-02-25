@@ -35,6 +35,7 @@
 // ######################################## Build macros ###########################################
 
 #define	xnetBUFFER_SIZE 			1024
+#define xnetMS_WAIT_LX				10000
 #define	xnetMS_GETHOST				10000
 #define xnetSTEP					pdMS_TO_TICKS(10)
 
@@ -475,7 +476,7 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV;
-	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(10000));
+	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(xnetMS_WAIT_LX));
 	if (ebX != flagLX_STA && ebX != flagLX_SAP)
 		return erFAILURE;
 
