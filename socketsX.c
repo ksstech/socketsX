@@ -390,7 +390,7 @@ int	xNetOpen(netx_t * psC) {
 		iRV = xNetGetHost(psC);
 		if (iRV < erSUCCESS)
 			return iRV;
-	} else {
+	} else {											// Either STA or SAP is OK....
 		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 
@@ -461,14 +461,16 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	psServCtx->error = 0;
 	// Set host/server RX timeout
 	int iRV = xNetSetRecvTO(psServCtx, mSecTime);
-	if (iRV < 0) return iRV;
+	if (iRV < 0)
+		return iRV;
 	memset(psClntCtx, 0, sizeof(netx_t));		// clear the client context
 	socklen_t len = sizeof(struct sockaddr_in);
 
 	// Also need to consider adding a loop to repeat the accept()
 	// in case of EAGAIN or POOL_IS_EMPTY errors
 	iRV = accept(psServCtx->sd, &psClntCtx->sa, &len);
-	if (iRV < 0) return xNetSyslog(psServCtx, __FUNCTION__);
+	if (iRV < 0)
+		return xNetSyslog(psServCtx, __FUNCTION__);
 	// The server socket had flags set for BIND & LISTEN but the client
 	// socket should just be connected and marked same type & flags
 	psClntCtx->sd = iRV;
@@ -486,19 +488,21 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && Flag < selFLAG_NUM);
 	psC->error = 0;
 	// If the timeout is too short dont select() just simulate 1 socket ready...
-	if (psC->tOut <= configXNET_MIN_TIMEOUT) return 1;
+	if (psC->tOut <= configXNET_MIN_TIMEOUT)
+		return 1;
 	// Need to add code here to accommodate LwIP & OpenSSL for ESP32
-	fd_set	fdsSet;
+	fd_set fdsSet;
 	FD_ZERO(&fdsSet);
 	FD_SET(psC->sd, &fdsSet);
-	struct timeval	timeVal;
-	timeVal.tv_sec	= psC->tOut / MILLIS_IN_SECOND;
+	struct timeval timeVal;
+	timeVal.tv_sec = psC->tOut / MILLIS_IN_SECOND;
 	timeVal.tv_usec = (psC->tOut * MICROS_IN_MILLISEC) % MICROS_IN_SECOND;
 	// do select based on new timeout
 	int iRV = select(psC->sd+1, (Flag == selFLAG_READ)	? &fdsSet : 0,
 								(Flag == selFLAG_WRITE) ? &fdsSet : 0,
 								(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
-	if (iRV < 0) return xNetSyslog(psC, __FUNCTION__);
+	if (iRV < 0)
+		return xNetSyslog(psC, __FUNCTION__);
 	if (debugTRACK && psC->d.s) {
 		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
 								Flag == selFLAG_WRITE ? "write/select" :
@@ -511,14 +515,16 @@ int	xNetClose(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV = erSUCCESS;
 	if (psC->sd != -1) {
-		if (debugTRACK && psC->d.cl)		xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
+		if (debugTRACK && psC->d.cl)
+			xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
 		if (psC->psSec) {
 			mbedtls_ssl_close_notify(&psC->psSec->ssl);
 			vNetMbedDeInit(psC);
 		}
 		iRV = close(psC->sd);
 		psC->sd = -1;								// mark as closed
-		if (debugTRACK && psC->d.cl)		xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
+		if (debugTRACK && psC->d.cl)
+			xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
 	}
 	return iRV;
 }
@@ -688,7 +694,8 @@ void xNetReportStats(report_t * psR) {
 	    socklen_t addr_size = sizeof(struct sockaddr_in);
 	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
-	    if (res == 0) wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, htons(addr.sin_port));
+	    if (res == 0)
+			wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, htons(addr.sin_port));
 	}
 	wprintfx(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
