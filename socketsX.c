@@ -531,12 +531,22 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemoryANY(pBuf) &&  xLen > 0);
 	psC->error = 0;
 	int iRV;
-	if (psC->psSec)			iRV = mbedtls_ssl_write(&psC->psSec->ssl, (unsigned char *) pBuf, xLen);
-	else if (psC->pHost)	iRV = send(psC->sd, pBuf, xLen, psC->flags);
-	else					iRV = sendto(psC->sd, pBuf, xLen, psC->flags, &psC->sa, sizeof(psC->sa_in));
-	if (iRV < 0)			return xNetSyslog(psC, __FUNCTION__);
+	unsigned char * pTmp = pBuf;
+	int xTmp = xLen;
+	do {
+		if (psC->psSec)			iRV = mbedtls_ssl_write(&psC->psSec->ssl, pTmp, xTmp);
+		else if (psC->pHost)	iRV = send(psC->sd, pTmp, xTmp, psC->flags);
+		else					iRV = sendto(psC->sd, pTmp, xTmp, psC->flags, &psC->sa, sizeof(psC->sa_in));
+		if (iRV == xTmp || iRV <= 0)					/* if all done sending or error */
+			break;										/* break out of loop */
+		pTmp += iRV;									/* step temp write pointer forward */
+		xTmp -= iRV;									/* adjust temp length downwards */
+	} while (iRV > 0);									/* loop until done... */
+	if (iRV < 0)
+		return xNetSyslog(psC, __FUNCTION__);
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
-	if (debugTRACK && psC->d.w) xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
+	if (debugTRACK && psC->d.w)
+		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
 	return iRV;
 }
 
