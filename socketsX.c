@@ -263,7 +263,6 @@ static void vNetMbedDeInit(netx_t * psC) {
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetGetHost(netx_t * psC) {
-	psC->error = 0;
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
 		return erFAILURE;
 	// https://sourceware.org/glibc/wiki/NameResolver
@@ -294,7 +293,6 @@ static int xNetGetHost(netx_t * psC) {
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetSocket(netx_t * psC)  {
-	psC->error = 0;
 	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
@@ -323,7 +321,6 @@ static int xNetSecurePreConnect(netx_t * psC) { return 0; }
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetConnect(netx_t * psC) {
-	psC->error = 0;
   	int iRV = connect(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
   	if (iRV != 0)
 		return xNetSyslog(psC, __FUNCTION__);
@@ -339,7 +336,6 @@ static int xNetConnect(netx_t * psC) {
  */
 static int xNetBindListen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
-	psC->error = 0;
 	int iRV = 0;
 	if (psC->flags & SO_REUSEADDR) {
 		int enable = 1;
@@ -363,7 +359,6 @@ static int xNetBindListen(netx_t * psC) {
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetSecurePostConnect(netx_t * psC) {
-	psC->error = 0;
 	u32_t Result;
 	int iRV = mbedtls_ssl_set_hostname(&psC->psSec->ssl, psC->pHost);
 	if (iRV == 0) {
@@ -406,6 +401,7 @@ int	xNetOpen(netx_t * psC) {
 	if (ebX != flagLX_STA && ebX != flagLX_SAP)
 		return erFAILURE;
 
+	psC->error = 0;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
