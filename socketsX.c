@@ -117,17 +117,6 @@ static int xNetReConnect(netx_t * psC) {
 	return iRV;
 }
 
-/**
- * @brief	report config, status & data of network connection context specified
- * @param	psR pointer to report control structure
- * @param	psC network context to be reported on
- * @param	pFname name of function invoking the report
- * @param	Code result code to be evaluated & reported on
- * @param	pBuf optional pointer to data buffer read/written
- * @param	xLen optional length of data in the buffer
- * @return	size of character output generated
- * @note	DOES lock/unlock console UART
-*/
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
 	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
 	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : (IPaddr == nvsWifi.ipSTA) ? "localhost" : "unknown";
@@ -594,12 +583,6 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 // ##################################### Block Send/Receive ########################################
 
 #if 0
-/*
- * @brief	Used when reading/writing blocks/buffers to adjust the overall timeout specified
- * @param	Socket context to use
- * @param	Timeout (total) to be configured into multiple retries of a smaller periods
- * @return	Actual period configured
- */
 u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	if (mSecTime == (psC->trymax * psC->tOut))			// same as previous
@@ -625,14 +608,6 @@ u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
 	return psC->tOut;
 }
 
-/**
- * @brief	Send memory buffer in smaller blocks using socket connection
- * @param	psC	pointer to connection context
- * @param	pBuf pointer to the buffer to write from
- * @param	xLen number of bytes in buffer to write
- * @param	mSecTime number of milli-seconds to block
- * @return	number of bytes written (ie < erSUCCESS indicates error code)
- */
 int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemoryANY(pBuf) && xLen > 0);
 	int	iRV, xLenDone = 0;
@@ -653,14 +628,6 @@ int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
 
-/**
- * @brief	read from a TCP/UDP connection
- * @param   psC pointer to connection context
- * @param	pBuf pointer to the buffer to read into
- * @param	xLen max number of bytes in buffer to read
- * @param	mSecTime number of milli-seconds to block
- * @return	number of bytes read (ie < erSUCCESS indicates error code)
- */
 int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemorySRAM(pBuf) && (xLen > 0));
 	mSecTime = xNetAdjustTO(psC, mSecTime);
