@@ -100,10 +100,13 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 static int xNetReConnect(netx_t * psC) {
 	IF_myASSERT(debugTRACK, psC->pHost);				/* MUST be a client context */
 	netx_t sTmpCtx;										/* temporary storage for disconnected context */
+	// recover error code from network stack
+	int iRV = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
+	if (iRV != ECONNABORTED)							/* Filter out qualifying error codes */
+		return erFAILURE;								/* and return error if not qualified */
 	memcpy(&sTmpCtx, psC, sizeof(netx_t));				/* save disconnected context in case reconnect fails */
-	int iRV = psC->error;
 	int ReConCnt = 0;
-	while (iRV < 0 && ReConCnt < psC->ReConnect) {
+	while (iRV < erSUCCESS && ReConCnt < psC->ReConnect) {
 		if (xNetWaitLx(pdMS_TO_TICKS(1000)) == flagLX_STA) {
 			psC->sd = 0;								/* clear some items for retry... */
 			psC->error = 0;
@@ -111,9 +114,13 @@ static int xNetReConnect(netx_t * psC) {
 		}
 		++ReConCnt;										/* update reconnection counter */
 	}
-	SL_WARN("ReConnect %s after %d of %d retries", iRV < 0 ? "FAIL" : "OK", ReConCnt, psC->ReConnect);
-	if (iRV < erSUCCESS)								/* if not successful */
+	if (iRV < 0) {										/* if not successful */
+		SL_ERR("FAIL after %d/%d retries", ReConCnt, psC->ReConnect);
 		memcpy(psC, &sTmpCtx, sizeof(netx_t));			/* restore original failed context*/	
+	} else {
+		SL_WARN("Success after %d/%d retries (sd=%d->%d)", ReConCnt, psC->ReConnect, sTmpCtx.sd, psC->sd);
+		xNetClose(&sTmpCtx);							/* successfully reconnected, close of context */
+	}
 	return iRV;
 }
 
@@ -535,22 +542,21 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 
 int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemorySRAM(pBuf) && (xLen > 0));
-	int	iRV, iReCon = -1;
+	int	iRV, iReCon = erFAILURE;
 	do {
 		psC->error = 0;
-		if (psC->psSec) {								// SSL connection
+		if (psC->psSec) {								/* SSL connection */
 			iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen);
-		} else if (psC->pHost) {						// TCP connection
+		} else if (psC->pHost) {						/* TCP connection */
 			iRV = recv(psC->sd, pBuf, xLen, psC->flags);
-		} else {										// UDP (connection-less)
+		} else {										/* UDP (connection-less) */
 			socklen_t i16AddrSize = sizeof(struct sockaddr_in);
 			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 		}
-		if (iRV >= 0)									/* received successfully ? */
-			break;										/* yes, exit the loop */
-		if (psC->ReConnect)								/* no, failed but reconnect enabled ? */
+		if (iRV < 0 && psC->ReConnect)					/* failed but reconnect enabled ? */
 			iReCon = xNetReConnect(psC);				/* yes, try to reconnect */
-	} while (iReCon >= 0);
+	} while (iReCon > erFAILURE);
+	// AMM check for possible loophole with 0 being returned, socket closed !!!
 	if (iRV < 0)
 		return xNetSyslog(psC, __FUNCTION__);
 	psC->maxRx = (iRV > psC->maxRx) ? iRV : psC->maxRx;
