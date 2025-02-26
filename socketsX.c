@@ -238,8 +238,6 @@ static void vNetMbedDeInit(netx_t * psC) {
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetGetHost(netx_t * psC) {
-	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
-		return erFAILURE;
 	// https://sourceware.org/glibc/wiki/NameResolver
 	// https://github.com/espressif/esp-idf/issues/5521
 	struct addrinfo * psAI;
@@ -372,10 +370,6 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV;
-	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(xnetMS_WAIT_LX));
-	if (ebX != flagLX_STA && ebX != flagLX_SAP)
-		return erFAILURE;
-
 	psC->error = 0;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
@@ -387,7 +381,12 @@ int	xNetOpen(netx_t * psC) {
 	}
 
 	// STEP 1: if connecting as client, resolve the host name & IP address
+	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(xnetMS_WAIT_LX));
+	if (ebX == 0)										// Not in STA nor SAP mode, get out...
+		return erFAILURE;								// get out of here...
 	if (psC->pHost) {									// Client type connection ?
+		if (ebX != flagLX_STA)							// MUST be in STAtion (not SAP) mode
+			return erFAILURE;
 		iRV = xNetGetHost(psC);
 		if (iRV < erSUCCESS)
 			return iRV;
