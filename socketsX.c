@@ -117,27 +117,6 @@ static int xNetReConnect(netx_t * psC) {
 	return iRV;
 }
 
-int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
-	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
-	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : (IPaddr == nvsWifi.ipSTA) ? "localhost" : "unknown";
-	int iRV = 0;
-	if (psR == NULL)
-		iRV += wprintfx(psR, "%!.3R ", halTIMER_ReadRunTime());
-	iRV += wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
-			xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
-			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
-			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
-			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
-			(Code < 0) ? pcStrError(Code) : "iRV", Code, psC->trynow,
-			psC->trymax, psC->tOut, (psC->tOut == 0) ? "(BLK)" : (psC->tOut == 1) ? "(NB)" : "mSec",
-			psC->d.val, psC->flags, psC->error);
-	if (psC->d.d && pBuf && xLen)
-		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
-	if (fmTST(aNL))
-		iRV += wprintfx(psR, strNL);
-	return iRV;
-}
-
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
 	wprintfx(NULL, "%s Lev=%d '%s' %s:%d" strNL, __FUNCTION__, level, str, level == 4 ? file : strNULL, level == 4 ? line : 0);
@@ -668,6 +647,27 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 #endif
 
 // ###################################### Socket Reporting #########################################
+
+int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
+	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
+	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : (IPaddr == nvsWifi.ipSTA) ? "localhost" : "unknown";
+	int iRV = 0;
+	if (psR == NULL)
+		iRV += wprintfx(psR, "%!.3R ", halTIMER_ReadRunTime());
+	iRV += wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d Try=%d/%d TO=%d%s D=0x%02X F=0x%X E=%d" strNL,
+			xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
+			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
+			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
+			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
+			(Code < 0) ? pcStrError(Code) : "iRV", Code, psC->trynow,
+			psC->trymax, psC->tOut, (psC->tOut == 0) ? "(BLK)" : (psC->tOut == 1) ? "(NB)" : "mSec",
+			psC->d.val, psC->flags, psC->error);
+	if (psC->d.d && pBuf && xLen)
+		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
+	if (fmTST(aNL))
+		iRV += wprintfx(psR, strNL);
+	return iRV;
+}
 
 void xNetReportStats(report_t * psR) {
 	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
