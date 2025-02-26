@@ -561,7 +561,6 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 
 // ##################################### Block Send/Receive ########################################
 
-#if 0
 u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	if (mSecTime == (psC->trymax * psC->tOut))			// same as previous
@@ -644,7 +643,6 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	}
 	return iRV;
 }
-#endif
 
 // ###################################### Socket Reporting #########################################
 
