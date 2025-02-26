@@ -504,9 +504,8 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 	if (iRV < 0)
 		return xNetSyslog(psC, __FUNCTION__);
 	if (debugTRACK && psC->d.s) {
-		xNetReport(NULL, psC, Flag == selFLAG_READ ? "read/select" :
-								Flag == selFLAG_WRITE ? "write/select" :
-								Flag == selFLAG_EXCEPT ? "except/select" : "", iRV, 0, 0);
+		const char * xNetSelectType[4] = { "RD/select", "WR/select", "EX/select", "UNKNOWN/select" };
+		xNetReport(NULL, psC, xNetSelectType[Flag & 3], iRV, 0, 0);
 	}
 	return iRV;
 }
