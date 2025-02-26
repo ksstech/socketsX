@@ -35,8 +35,6 @@
 // ######################################## Build macros ###########################################
 
 #define netxBUILD_SPC				0					// en/disable Secure PreConnect support
-#define netxRESOLVE					1
-
 #define	xnetBUFFER_SIZE 			1024
 #define xnetMS_WAIT_LX				10000
 #define	xnetMS_GETHOST				10000
@@ -268,7 +266,6 @@ static int xNetGetHost(netx_t * psC) {
 	psC->error = 0;
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_GETHOST)) != flagLX_STA)
 		return erFAILURE;
-#if (netxRESOLVE == 1)				// [lwip_]getaddrinfo 		WORKS!!!
 	// https://sourceware.org/glibc/wiki/NameResolver
 	// https://github.com/espressif/esp-idf/issues/5521
 	struct addrinfo * psAI;
@@ -289,44 +286,6 @@ static int xNetGetHost(netx_t * psC) {
 	if (psAI != NULL)
 		freeaddrinfo(psAI);
 	return iRV;
-
-#elif (netxRESOLVE == 2)			// gethostbyname()			UNRELIABLE
-	static SemaphoreHandle_t GetHostMux;
-	xRtosSemaphoreTake(&GetHostMux, portMAX_DELAY);
-	int iRV = 0;
-	struct hostent * psHE = gethostbyname(psC->pHost);
-//	P("Host=:%s  psHE=%p" strNL, psC->pHost, psHE);
-//	IF_PX(psHE, "Name=%s" strNL, psHE->h_name);
-//	IF_PX(psHE, "Type=%d" strNL, psHE->h_addrtype);
-//	IF_PX(psHE, "Len=%d" strNL, psHE->h_length);
-//	IF_PX(psHE, "List=%p" strNL, psHE->h_addr_list);
-//	IF_PX(psHE && psHE->h_addr_list, "List[0]=%p" strNL, psHE->h_addr_list[0]);
-//	IF_PX(psHE && psHE->h_addr_list && psHE->h_addr_list[0], "Addr[0]=%-#I" strNL, ((struct in_addr *) psHE->h_addr_list[0])->s_addr);
-	if ((psHE == NULL) || (psHE->h_addrtype != AF_INET) ||
-		(psHE->h_addr_list == NULL) || (psHE->h_addr_list[0] == NULL)) {
-		iRV = xNetSyslog(psC, __FUNCTION__);
-	} else {
-		struct in_addr * psIA = (struct in_addr *) psHE->h_addr_list[0];
-		psC->sa_in.sin_addr.s_addr = psIA->s_addr;
-		if (debugTRACK && psC->d.h)
-			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
-	}
-	xRtosSemaphoreGive(&GetHostMux);
-	return iRV;
-
-#elif (netxRESOLVE == 3)			// netconn_gethostbyname_addrtype()
-	ip_addr_t addr;
-	int iRV = netconn_gethostbyname_addrtype(psC->pHost, &addr, AF_INET);
-	PX("Host=%s  iRV=%d  type=%d  so1=%d  so2=%d so3=%d" strNL, psC->pHost, iRV, addr.type, sizeof(struct sockaddr_storage), sizeof(struct sockaddr), sizeof(struct sockaddr_in));
-	if (iRV != 0)
-		return xNetSyslog(psC, __FUNCTION__);
-	struct sockaddr_in * psSAI = &psC->sa_in;
-//	psC->sa_in.sin_addr.s_addr = addr.u_addr.ip4.addr;
-	psSAI->sin_addr.s_addr = addr.u_addr.ip4.addr;
-	if (debugTRACK && psC->d.h)
-		xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
-	return iRV;
-#endif
 }
 
 /**
