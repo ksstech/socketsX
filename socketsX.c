@@ -379,6 +379,13 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
+	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(xnetMS_CONNECTED));
+	if (ebX == 0) {										// Not in STA nor SAP mode, get out...
+		psC->error = ENOTCONN;
+		psC->ConErr++;
+		return erFAILURE;								// get out of here...
+	}
+	psC->ConOK++;
 	int	iRV;
 	psC->error = 0;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
