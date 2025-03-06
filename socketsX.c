@@ -17,6 +17,7 @@
 
 #ifdef CONFIG_LWIP_DEBUG
 	#include "lwip/debug.h"
+	#include "lwip/stats.h"
 #endif
 
 #ifdef	CONFIG_MBEDTLS_DEBUG
@@ -686,6 +687,30 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 	if (fmTST(aNL))
 		iRV += wprintfx(psR, strNL);
 	return iRV;
+}
+
+/**
+ * @brief 
+ * @param p 
+ * @param name
+*/
+void __wrap_stats_display_proto(struct stats_proto *p, const char *name) {
+	#define hdrPROTO "%s\txmit\trecv\tfw\tdrop\tchkerr\tlenerr\tmemerr\trterr\tproterr\topterr\terr\tcachehit" strNL
+	wprintfx(NULL, hdrPROTO, name);
+	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d", p->xmit, p->recv, p->fw, p->drop, p->chkerr, p->lenerr);
+	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d" strNL, p->memerr, p->rterr, p->proterr, p->opterr, p->err, p->cachehit);
+}
+
+void __wrap_stats_display_igmp(struct stats_igmp *p, const char *name) {
+	#define hdrIGMP "%s\txmit\trecv\tdrop\tchkerr\tlenerr\tmemerr\tproterr\tRXv1\tRXgrp\tRXgen\tRXrprt\tTXjoin\tTXleave\tTXrprt" strNL
+	wprintfx(NULL, hdrIGMP, name);
+	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d\t%d", p->xmit, p->recv, p->drop, p->chkerr, p->lenerr, p->memerr, p->proterr);
+	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d\t%d" strNL, p->rx_v1, p->rx_group, p->rx_general, p->rx_report, p->tx_join, p->tx_leave, p->tx_report);
+}
+
+void __wrap_stats_display_sys(struct stats_sys *p) {
+	wprintfx(NULL, "SYS\tSEMused\tSEMmax\tSEMerr\tMUXused\tMUXmax\tMUXerr\tMBXused\tMBXmax\tMBXerr" strNL "\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d" strNL,
+		p->sem.used, p->sem.max, p->sem.err, p->mutex.used, p->mutex.max, p->mutex.err, p->mbox.used, p->mbox.max, p->mbox.err);
 }
 
 void xNetReportStats(report_t * psR) {
