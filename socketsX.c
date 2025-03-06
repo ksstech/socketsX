@@ -420,14 +420,15 @@ int	xNetOpen(netx_t * psC) {
 		if (iRV < erSUCCESS)
 			return iRV;
 	}
-#if	(netxBUILD_SPC == 1)
+
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
-	if (psC->psSec) {
-		iRV = xNetSecurePreConnect(psC);
-		if (iRV < erSUCCESS)
-			return iRV;
-	}
-#endif
+	#if	(netxBUILD_SPC == 1)
+		if (psC->psSec) {
+			iRV = xNetSecurePreConnect(psC);
+			if (iRV < erSUCCESS)
+				return iRV;
+		}
+	#endif
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
