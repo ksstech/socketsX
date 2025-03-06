@@ -52,7 +52,8 @@
  */
 static int xNetSyslog(netx_t * psC, const char * pFname) {
 	// save error code from network stack
-	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
+//	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
+	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : psC->error;
 //	IF_myASSERT(debugTRACK, psC->error != 0);
 	bool fAlloc = 0;
 	char * pcMess = NULL;
