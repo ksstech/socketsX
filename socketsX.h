@@ -2,18 +2,12 @@
 
 #pragma once
 
-//#include <err.h>
-//#include <sockets.h>
-//#include <sys.h>
-//#include <dns.h>
 #include <netdb.h>
 
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
-//#include "lwip/netdb.h"
 #include "lwip/dns.h"
-
 
 #include "mbedtls/platform.h"
 #include "mbedtls/net_sockets.h"
@@ -172,7 +166,7 @@ EventBits_t xNetWaitLx(TickType_t ttWait);
  * @param[in]	psC pointer to socket context
  * @return		status of last socket operation (ie < 0 indicates error code)
  */
-int	xNetOpen(netx_t * psConn);
+int	xNetOpen(netx_t * psC);
 
 /**
  * @brief		set connection receive timeout
@@ -180,7 +174,7 @@ int	xNetOpen(netx_t * psConn);
  * @param[in]	mSecTime timeout to be configured
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
-int	xNetSetRecvTO(netx_t * psConn, u32_t mSecTime);
+int	xNetSetRecvTO(netx_t * psC, u32_t mSecTime);
 
 /**
  * @brief	
@@ -197,14 +191,14 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime);
  * @param	Flag - 
  * @return
  */
-int	xNetSelect(netx_t * psConn, u8_t Flag);
+int	xNetSelect(netx_t * psC, u8_t Flag);
 
 /**
  * @brief	close the socket connection
  * @param	psC = pointer to connection context
  * @return	result of the close (ie < erSUCCESS indicate error code)
  */
-int	xNetClose(netx_t * psConn);
+int	xNetClose(netx_t * psC);
 
 /**
  * @brief	Write data to host based on connection context
@@ -213,7 +207,7 @@ int	xNetClose(netx_t * psConn);
  * @param	xLen number of bytes in buffer to send
  * @return	0->xLen indicating number of bytes sent else error negative error code
  */
-int	xNetSend(netx_t * psConn, u8_t * pBuf, int xLen);
+int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen);
 
 /**
  * @brief
@@ -222,7 +216,7 @@ int	xNetSend(netx_t * psConn, u8_t * pBuf, int xLen);
  * @param	xLen size of buffer ie max bytes to receive
  * @return	0->xLen indicating number of bytes received else negative error code
  */
-int	xNetRecv(netx_t * psConn, u8_t * pBuf, int xLen);
+int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen);
 
 // ##################################### Block Send/Receive ########################################
 
@@ -242,7 +236,7 @@ u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime);
  * @param	mSecTime number of milli-seconds to block
  * @return	number of bytes written (ie < erSUCCESS indicates error code)
  */
-int	xNetSendBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
+int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime);
 
 /**
  * @brief	read from a TCP/UDP connection
@@ -252,7 +246,7 @@ int	xNetSendBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
  * @param	mSecTime number of milli-seconds to block
  * @return	number of bytes read (ie < erSUCCESS indicates error code)
  */
-int	xNetRecvBlocks(netx_t * psConn, u8_t * pBuf, int xLen, u32_t mSecTime);
+int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime);
 
 // ###################################### uBuf Send/Receive ########################################
 
