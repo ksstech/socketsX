@@ -567,13 +567,13 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 			break;										/* break out of loop */
 		pTmp += iRV;									/* step temp write pointer forward */
 		xTmp -= iRV;									/* adjust temp length downwards */
-	} while (iRV > 0);									/* loop until done... */
-	if (iRV < 0)
+	} while (xTmp > 0);									/* loop until done... */
+	if (iRV <= 0)
 		return xNetSyslog(psC, __FUNCTION__);
 	psC->maxTx = (iRV > psC->maxTx) ? iRV : psC->maxTx;
 	if (debugTRACK && psC->d.w)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, pBuf, iRV);
-	return iRV;
+	return xLen;										/* was iRV which would be a 0 */
 }
 
 int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
