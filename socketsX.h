@@ -112,6 +112,7 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	int error;						// error code return by last operation..
 	int flags;						// Check implementation
 	size_t maxTx, maxRx;
+	int ConOK, ConErr, ReConOK, ReConErr;
 	i16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
 	u16_t soRcvTO;					// socket option receive timeout
@@ -146,7 +147,7 @@ typedef struct __attribute__((aligned(4))) netx_t {
 		u16_t val;
 	} d;
 } netx_t;
-DUMB_STATIC_ASSERT( sizeof(netx_t) == (36 + sizeof(struct sockaddr_in)));
+DUMB_STATIC_ASSERT( sizeof(netx_t) == (52 + sizeof(struct sockaddr_in)));
 
 typedef union netx_dbg_u netx_dbg_t;
 
