@@ -37,9 +37,11 @@
 
 #define netxBUILD_SPC				0					// en/disable Secure PreConnect support
 #define	xnetBUFFER_SIZE 			1024
-#define xnetMS_WAIT_LX				10000
-#define	xnetMS_GETHOST				10000
+#define xnetMS_CONNECTED			2000				// was 10000
+#define xnetMS_RECONNECT			1000				//
 #define xnetTICKS_STEP				10
+
+// ######################################## Local constants ########################################
 
 // ######################################## Local constants ########################################
 
