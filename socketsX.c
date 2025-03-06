@@ -94,6 +94,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	return psC->error ? erFAILURE : erSUCCESS;
 }
 
+#if (appNEW_CODE > 0)
 /**
  * @brief		Try to automatically reconnect on unexpected disconnect
  * @param[in]	psCtx pointer to suddenly disconnected context
@@ -104,27 +105,34 @@ static int xNetReConnect(netx_t * psC) {
 	netx_t sTmpCtx;										/* temporary storage for disconnected context */
 	// recover error code from network stack
 	int iRV = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
-	if (iRV != ECONNABORTED)							/* Filter out qualifying error codes */
+
+	/* Filter out qualifying error codes */
+	if (iRV != ECONNABORTED && iRV != EHOSTUNREACH && iRV != ENOTCONN)
 		return erFAILURE;								/* and return error if not qualified */
+
 	memcpy(&sTmpCtx, psC, sizeof(netx_t));				/* save disconnected context in case reconnect fails */
-	int ReConCnt = 0;
-	while (iRV < erSUCCESS && ReConCnt < psC->ReConnect) {
-		if (xNetWaitLx(pdMS_TO_TICKS(1000)) == flagLX_STA) {
-			psC->sd = 0;								/* clear some items for retry... */
-			psC->error = 0;
-			iRV = xNetOpen(psC);						/* try reconnect with existing context */
-		}
-		++ReConCnt;										/* update reconnection counter */
-	}
-	if (iRV < 0) {										/* if not successful */
-		SL_ERR("FAIL after %d/%d retries", ReConCnt, psC->ReConnect);
-		memcpy(psC, &sTmpCtx, sizeof(netx_t));			/* restore original failed context*/	
+	bool bSyslog = psC->bSyslog;						/* save state of bSyslog flag */
+	psC->bSyslog = 1;									/* ensure only going to console */
+	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_RECONNECT)) == flagLX_STA) {
+		psC->sd = 0;									/* clear some items for retry... */
+		psC->error = 0;
+		iRV = xNetOpen(psC);							/* try reconnect with failed context */
 	} else {
-		SL_WARN("Success after %d/%d retries (sd=%d->%d)", ReConCnt, psC->ReConnect, sTmpCtx.sd, psC->sd);
-		xNetClose(&sTmpCtx);							/* successfully reconnected, close of context */
+		iRV = erFAILURE;
+	}
+
+	if (iRV < 0) {										/* if not successful */
+		memcpy(psC, &sTmpCtx, sizeof(netx_t));			/* restore original failed context */
+		psC->ReConErr++;
+	} else {
+		xNetClose(&sTmpCtx);							/* successfully reconnected, close failed context */
+		psC->bSyslog = bSyslog;							/* restore original state of flag */
+		psC->error = 0;									/* clear error in original, now restored context */
+		psC->ReConOK++;
 	}
 	return iRV;
 }
+#endif
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
