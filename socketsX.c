@@ -39,7 +39,7 @@
 #define	xnetBUFFER_SIZE 			1024
 #define xnetMS_WAIT_LX				10000
 #define	xnetMS_GETHOST				10000
-#define xnetSTEP					pdMS_TO_TICKS(10)
+#define xnetTICKS_STEP				10
 
 // ######################################## Local constants ########################################
 
@@ -364,15 +364,15 @@ static int xNetSecurePostConnect(netx_t * psC) {
 
 EventBits_t xNetWaitLx(TickType_t ttWait) {
 	if (ttWait != portMAX_DELAY)
-		ttWait = (pdMS_TO_TICKS(ttWait) <= xnetSTEP) ? xnetSTEP : u32Round(pdMS_TO_TICKS(ttWait), xnetSTEP);
+		ttWait = (ttWait <= xnetTICKS_STEP) ? xnetTICKS_STEP : u32Round(ttWait, xnetTICKS_STEP);
 	do {
 		if (halEventCheckStatus(flagLX_STA))
 			return flagLX_STA;
 		if (halEventCheckStatus(flagL1|flagL2_SAP))
 			return flagLX_SAP;
-		vTaskDelay(xnetSTEP);
+		vTaskDelay(xnetTICKS_STEP);
 		if (ttWait != portMAX_DELAY)
-			ttWait -= xnetSTEP;
+			ttWait -= xnetTICKS_STEP;
 	} while (ttWait);
 	return 0;
 }
