@@ -399,9 +399,6 @@ int	xNetOpen(netx_t * psC) {
 	}
 
 	// STEP 1: if connecting as client, resolve the host name & IP address
-	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(xnetMS_WAIT_LX));
-	if (ebX == 0)										// Not in STA nor SAP mode, get out...
-		return erFAILURE;								// get out of here...
 	if (psC->pHost) {									// Client type connection ?
 		if (ebX != flagLX_STA)							// MUST be in STAtion (not SAP) mode
 			return erFAILURE;
