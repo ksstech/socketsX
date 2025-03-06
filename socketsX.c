@@ -61,7 +61,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN) {
 		psC->error = EAGAIN;
 	}
-//	if ((psC->error == EAGAIN && psC->d.ea) || (psC->error != ENOTCONN && psC->error != EAGAIN)) {
+	/* if error anything but EAGAIN or is EAGAIN but d.ea flag is set for debugging, report the error*/
 	if ((psC->error == EAGAIN && psC->d.ea) || psC->error != EAGAIN) {
 		// Step 2: Map error code to message
 		if (INRANGE(mbedERROR_SMALLEST, psC->error, mbedERROR_BIGGEST)) {
@@ -87,7 +87,8 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 		 */
 		int Level = psC->bSyslog ? xSyslogGetConsoleLevel() : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, psC->error, psC->error);
-		if (fAlloc) free(pcMess);
+		if (fAlloc)
+			free(pcMess);
 	}
 	return psC->error ? erFAILURE : erSUCCESS;
 }
