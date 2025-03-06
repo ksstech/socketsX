@@ -535,6 +535,12 @@ int	xNetClose(netx_t * psC) {
 int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 	// Check pBuf range against MEM not SRAM to allow COREDUMP from FLASH
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemoryANY(pBuf) &&  xLen > 0);
+	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_CONNECTED)) == 0) {
+		psC->error = ENOTCONN;
+		psC->ConErr++;
+		return erFAILURE;
+	}
+	psC->ConOK++;
 	psC->error = 0;
 	int iRV;
 	unsigned char * pTmp = pBuf;
@@ -559,6 +565,12 @@ int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen) {
 int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC) && halMemorySRAM(pBuf) && (xLen > 0));
 	int	iRV, iReCon = erFAILURE;
+	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_CONNECTED)) == 0) {
+		psC->error = ENOTCONN;
+		psC->ConErr++;
+		return erFAILURE;
+	}
+	psC->ConOK++;
 	do {
 		psC->error = 0;
 		if (psC->psSec) {								/* SSL connection */
