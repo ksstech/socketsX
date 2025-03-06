@@ -59,7 +59,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	// Step 1: remap error codes where required
 	if (psC->error == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
 		psC->error = ENOTCONN;
-	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN) {
+	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN || psC->error == EWOULDBLOCK) {
 		psC->error = EAGAIN;
 	}
 	/* if error anything but EAGAIN or is EAGAIN but d.ea flag is set for debugging, report the error*/
