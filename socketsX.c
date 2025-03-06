@@ -529,7 +529,7 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 int	xNetClose(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	int	iRV = erSUCCESS;
-	if (psC->sd != -1) {
+	if (psC->sd >= 0) {
 		if (debugTRACK && psC->d.cl)
 			xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
 		if (psC->psSec) {
