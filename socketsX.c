@@ -123,14 +123,15 @@ static int xNetReConnect(netx_t * psC) {
 		iRV = erFAILURE;
 	}
 
-	if (iRV < 0) {										/* if not successful */
-		memcpy(psC, &sTmpCtx, sizeof(netx_t));			/* restore original failed context */
-		psC->ReConErr++;
-	} else {
+	if (iRV >= 0) {										/* if successful */
+		psC->sU32 = sTmpCtx.sU32;						/* restore original state of config */
 		xNetClose(&sTmpCtx);							/* successfully reconnected, close failed context */
 		psC->bSyslog = bSyslog;							/* restore original state of flag */
 		psC->error = 0;									/* clear error in original, now restored context */
 		psC->ReConOK++;
+	} else {											/* if reconnect failed */
+		memcpy(psC, &sTmpCtx, sizeof(netx_t));			/* restore original failed context */
+		psC->ReConErr++;
 	}
 	return iRV;
 }

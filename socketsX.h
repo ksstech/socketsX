@@ -116,13 +116,16 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	i16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
 	u16_t soRcvTO;					// socket option receive timeout
-	struct __attribute__((packed)) {
-		u8_t trymax;				// max times to try read
-		u8_t trynow;				// times tried
-		u8_t type:3;				// valid 1->5, STREAM/TCP, DGRAM/UDP or RAW/RAW
-		u8_t bSyslog:1;				// call from syslog, change level in xNetGetError()
-		u8_t ReConnect:2;			// 0=disable 1~3=automatic reconnection attempts
-		u16_t spare:10	;
+	union {
+		struct __attribute__((packed)) {
+			u8_t trymax;			// max times to try read
+			u8_t trynow;			// times tried
+			u8_t type:3;			// valid 1->5, STREAM/TCP, DGRAM/UDP or RAW/RAW
+			u8_t bSyslog:1;			// call from syslog, change level in xNetGetError()
+			u8_t ReConnect:2;		// 0=disable 1~3=automatic reconnection attempts
+			u16_t spare:10;
+		};
+		u32_t sU32;					// all the flags as single member
 	};
 	union netx_dbg_u {				// debug control flags
 		struct __attribute__((packed)) {
@@ -147,7 +150,7 @@ typedef struct __attribute__((aligned(4))) netx_t {
 		u16_t val;
 	} d;
 } netx_t;
-DUMB_STATIC_ASSERT( sizeof(netx_t) == (52 + sizeof(struct sockaddr_in)));
+DUMB_STATIC_ASSERT( sizeof(netx_t) == (56 + sizeof(struct sockaddr_in)));
 
 typedef union netx_dbg_u netx_dbg_t;
 
