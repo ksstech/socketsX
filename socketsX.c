@@ -102,19 +102,21 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
  * @param[in]	psCtx pointer to suddenly disconnected context
  * @return		result from xNetOpen()
  */
-static int xNetReConnect(netx_t * psC) {
-	IF_myASSERT(debugTRACK, psC->pHost);				/* MUST be a client context */
-	netx_t sTmpCtx;										/* temporary storage for disconnected context */
-	// recover error code from network stack
+int xNetReConnect(netx_t * psC) {
+	if (psC->pHost == NULL)								/* MUST be a client context */
+		return erFAILURE;
+	/* recover error code from network stack */
 	int iRV = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
 
 	/* Filter out qualifying error codes */
 	if (iRV != ECONNABORTED && iRV != EHOSTUNREACH && iRV != ENOTCONN)
 		return erFAILURE;								/* and return error if not qualified */
 
+	netx_t sTmpCtx;										/* temporary storage for disconnected context */
 	memcpy(&sTmpCtx, psC, sizeof(netx_t));				/* save disconnected context in case reconnect fails */
-	bool bSyslog = psC->bSyslog;						/* save state of bSyslog flag */
+	// now setup the context for a retry
 	psC->bSyslog = 1;									/* ensure only going to console */
+	psC->ReConnect = 0;									/* Disable reconnect within xNetReConnect() */
 	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_RECONNECT)) == flagLX_STA) {
 		psC->sd = 0;									/* clear some items for retry... */
 		psC->error = 0;
@@ -126,7 +128,6 @@ static int xNetReConnect(netx_t * psC) {
 	if (iRV >= 0) {										/* if successful */
 		psC->sU32 = sTmpCtx.sU32;						/* restore original state of config */
 		xNetClose(&sTmpCtx);							/* successfully reconnected, close failed context */
-		psC->bSyslog = bSyslog;							/* restore original state of flag */
 		psC->error = 0;									/* clear error in original, now restored context */
 		psC->ReConOK++;
 	} else {											/* if reconnect failed */
