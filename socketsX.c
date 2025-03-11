@@ -97,7 +97,6 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	return erFAILURE;
 }
 
-#if (appNEW_CODE > 0)
 /**
  * @brief		Try to automatically reconnect on unexpected disconnect
  * @param[in]	psCtx pointer to suddenly disconnected context
@@ -135,7 +134,6 @@ static int xNetReConnect(netx_t * psC) {
 	}
 	return iRV;
 }
-#endif
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
