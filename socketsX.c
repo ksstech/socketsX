@@ -78,7 +78,8 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	 * Hence to ensure Syslog related errors does not get logged, lift the level
 	 */
 	/* if error anything but EAGAIN or is EAGAIN but d.ea flag is set for debugging, report the error*/
-	if ((psC->error == EAGAIN && psC->d.ea) || psC->error != EAGAIN) {
+	if ((psC->bSyslog == 0) &&
+		(psC->error != EAGAIN || (psC->error == EAGAIN && psC->d.ea))) {
 		// Step 2: Map error code to message
 		if (INRANGE(mbedERROR_SMALLEST, psC->error, mbedERROR_BIGGEST)) {
 			pcMess = malloc(xnetBUFFER_SIZE);
