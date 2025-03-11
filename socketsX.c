@@ -54,7 +54,6 @@
  */
 static int xNetSyslog(netx_t * psC, const char * pFname) {
 	// save error code from network stack
-//	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
 	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : psC->error;
 //	IF_myASSERT(debugTRACK, psC->error != 0);
 	bool fAlloc = 0;
@@ -65,6 +64,18 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN || psC->error == EWOULDBLOCK) {
 		psC->error = EAGAIN;
 	}
+	/* The problem with printfx() or any of the variants are
+	 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
+	 * b) and the network connection is dropped; then
+	 * c) the detection of the socket being closed (or other error)
+	 * d) will cause the system to want to send more data to the (closed) socket.....
+	 * 
+	 * In order to avoid recursing back into syslog in cases of network errors
+	 * encountered in the syslog connection, we check on the bSyslog flag.
+	 * If set, we change the severity to ONLY go to the console and
+	 * not attempt to go out the network, which would bring it back here
+	 * Hence to ensure Syslog related errors does not get logged, lift the level
+	 */
 	/* if error anything but EAGAIN or is EAGAIN but d.ea flag is set for debugging, report the error*/
 	if ((psC->error == EAGAIN && psC->d.ea) || psC->error != EAGAIN) {
 		// Step 2: Map error code to message
@@ -77,18 +88,6 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 		}
 		// Step 3: Process error code and message
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
-		/* The problem with printfx() or any of the variants are
-		 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
-		 * b) and the network connection is dropped; then
-		 * c) the detection of the socket being closed (or other error)
-		 * d) will cause the system to want to send more data to the (closed) socket.....
-		 * 
-		 * In order to avoid recursing back into syslog in cases of network errors
-		 * encountered in the syslog connection, we check on the bSyslog flag.
-		 * If set, we change the severity to ONLY go to the console and
-		 * not attempt to go out the network, which would bring it back here
-		 * Hence to ensure Syslog related errors does not get logged, lift the level
-		 */
 		int Level = psC->bSyslog ? xSyslogGetConsoleLevel() : SL_SEV_ERROR;
 		vSyslog(Level, pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, psC->error, psC->error);
 		if (fAlloc)
@@ -383,7 +382,7 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(xnetMS_CONNECTED));
-	if (ebX == 0) {										// Not in STA nor SAP mode, get out...
+	if (ebX == 0) {										// Neither STA nor SAP level functional, get out...
 		psC->error = ENOTCONN;
 		psC->ConErr++;
 		return erFAILURE;								// get out of here...
@@ -415,7 +414,7 @@ int	xNetOpen(netx_t * psC) {
 	iRV = xNetSocket(psC);
 	if (iRV < erSUCCESS)
 		return iRV;
-	if (psC->soRcvTO) {
+	if (psC->soRcvTO) {									// If 0, leave default, 
 		iRV = xNetSetRecvTO(psC, psC->soRcvTO);
 		if (iRV < erSUCCESS)
 			return iRV;
@@ -586,7 +585,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 		return erFAILURE;
 	}
 	psC->ConOK++;
-#if (appNEW_CODE > 0)
+#if (appRECONNECT > 0)
 	int	iRV, RCcnt = 0;
 	do {
 		psC->error = 0;

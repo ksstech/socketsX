@@ -102,13 +102,13 @@ typedef struct sock_sec_t {
 } sock_sec_t;
 
 typedef struct __attribute__((aligned(4))) netx_t {
+	const char * pHost;				// name of host to connect to
+	sock_sec_t * psSec;				// pointer to SSL/TLS config
 	union {
 //		struct sockaddr_storage ss;	// largest, ensure space for ANY type/size
 		struct sockaddr_in sa_in;
 		struct sockaddr sa;
 	};
-	const char * pHost;				// name of host to connect to
-	sock_sec_t * psSec;				// pointer to SSL/TLS config
 	int error;						// error code return by last operation..
 	int flags;						// Check implementation
 	size_t maxTx, maxRx;
