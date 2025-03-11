@@ -90,8 +90,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 		}
 		// Step 3: Process error code and message
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
-		int Level = psC->bSyslog ? xSyslogGetConsoleLevel() : SL_SEV_ERROR;
-		vSyslog(Level, pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, psC->error, psC->error);
+		vSyslog(SL_PRI(SL_FAC_LOGALERT, SL_SEV_ERROR), pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, psC->error, psC->error);
 		if (fAlloc)
 			free(pcMess);
 	}
