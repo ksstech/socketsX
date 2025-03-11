@@ -55,7 +55,8 @@
 static int xNetSyslog(netx_t * psC, const char * pFname) {
 	// save error code from network stack
 	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : psC->error;
-//	IF_myASSERT(debugTRACK, psC->error != 0);
+	if (psC->error == 0)
+		return erSUCCESS;
 	bool fAlloc = 0;
 	char * pcMess = NULL;
 	// Step 1: remap error codes where required
@@ -93,7 +94,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 		if (fAlloc)
 			free(pcMess);
 	}
-	return psC->error ? erFAILURE : erSUCCESS;
+	return erFAILURE;
 }
 
 #if (appNEW_CODE > 0)
