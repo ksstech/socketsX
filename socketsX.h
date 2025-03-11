@@ -257,6 +257,11 @@ int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
 
 // ###################################### Socket Reporting #########################################
 
+/**
+ * @brief	Loop through all open sockets looking for and closing duplicate connections
+ */
+void xNetCloseDuplicates(void);
+
 struct report_t;
 /**
  * @brief	report config, status & data of network connection context specified

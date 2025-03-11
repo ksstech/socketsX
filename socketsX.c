@@ -711,6 +711,27 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 
 // ###################################### Socket Reporting #########################################
 
+void xNetCloseDuplicates(void) {
+	int iRV, ClosedCount = 0;
+	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
+	    struct sockaddr_in addr;
+	    socklen_t addr_size = sizeof(struct sockaddr_in);
+	    int sock = LWIP_SOCKET_OFFSET + i;
+	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
+	    if (res == 0) {
+			iRV = xSyslogCheckDuplicates(sock, &addr);
+			if (iRV) {
+				ClosedCount += iRV;
+				SL_WARN("Closed sd=%d -> %-#I:%d", sock, addr.sin_addr.s_addr, htons(addr.sin_port));
+				continue;
+			}
+			// try the next port address
+		}	// (res == 0)
+	}		// (for i = 0)
+	if (ClosedCount)
+		SL_WARN("Closed %d sockets", ClosedCount);
+}
+
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {
 	u32_t IPaddr = psC->sa_in.sin_addr.s_addr ? psC->sa_in.sin_addr.s_addr : nvsWifi.ipSTA;
 	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : (IPaddr == nvsWifi.ipSTA) ? "localhost" : "unknown";
