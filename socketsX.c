@@ -713,25 +713,23 @@ int	xNetRecvUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 
 // ###################################### Socket Reporting #########################################
 
-void xNetCloseDuplicates(void) {
-	int iRV, ClosedCount = 0;
-	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
+int xNetCloseDuplicates(u16_t port) {
+	int iRV, Count = 0;
+	for (int sock = LWIP_SOCKET_OFFSET; sock < (LWIP_SOCKET_OFFSET+CONFIG_LWIP_MAX_SOCKETS); ++sock) {
 	    struct sockaddr_in addr;
 	    socklen_t addr_size = sizeof(struct sockaddr_in);
-	    int sock = LWIP_SOCKET_OFFSET + i;
-	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
-	    if (res == 0) {
-			iRV = xSyslogCheckDuplicates(sock, &addr);
-			if (iRV) {
-				ClosedCount += iRV;
-				SL_WARN("Closed sd=%d -> %-#I:%d", sock, addr.sin_addr.s_addr, htons(addr.sin_port));
-				continue;
-			}
-			// try the next port address
+	    iRV = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
+		if (iRV == -1)
+			continue;
+	    if ((iRV == 0) && (addr.sin_port == port)) {
+			close(sock);
+			++Count;
+			SL_WARN("Closing sd=%d -> %-#I:%d", sock, addr.sin_addr.s_addr, htons(addr.sin_port));
+		} else {
+			SL_NOT("Ignoring sd=%d -> %-#I:%d (iRV=%d)", sock, addr.sin_addr.s_addr, htons(addr.sin_port), iRV);
 		}	// (res == 0)
 	}		// (for i = 0)
-	if (ClosedCount)
-		SL_WARN("Closed %d sockets", ClosedCount);
+	return Count;
 }
 
 int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void * pBuf, int xLen) {

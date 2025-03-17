@@ -263,7 +263,7 @@ int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
 /**
  * @brief	Loop through all open sockets looking for and closing duplicate connections
  */
-void xNetCloseDuplicates(void);
+int xNetCloseDuplicates(u16_t port);
 
 struct report_t;
 /**
