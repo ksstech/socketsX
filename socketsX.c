@@ -789,14 +789,18 @@ void __wrap_stats_display_sys(struct stats_sys *p) {
 }
 
 void xNetReportStats(report_t * psR) {
-	for (int i = 0; i < CONFIG_LWIP_MAX_SOCKETS; ++i) {
-	    struct sockaddr_in addr;
+//	for (int sock = LWIP_SOCKET_OFFSET; sock < (LWIP_SOCKET_OFFSET + CONFIG_LWIP_MAX_SOCKETS); ++sock) {
+	for (int sock = 0; sock < (LWIP_SOCKET_OFFSET + CONFIG_LWIP_MAX_SOCKETS); ++sock) {
+		struct sockaddr_in addr;
 	    socklen_t addr_size = sizeof(struct sockaddr_in);
-	    int sock = LWIP_SOCKET_OFFSET + i;
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
 			wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, htons(addr.sin_port));
 	}
+	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
+	#if 0
+	void dbg_lwip_tcp_pcb_show(void); dbg_lwip_tcp_pcb_show();
+	void dbg_lwip_udp_pcb_show(void); dbg_lwip_udp_pcb_show();
 	wprintfx(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	toSTR(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
@@ -814,7 +818,5 @@ void xNetReportStats(report_t * psR) {
 			"  Listen="			toSTR(CONFIG_LWIP_MAX_LISTENING_TCP) strNL
 			"UDP: Max PCBs="	toSTR(CONFIG_LWIP_MAX_UDP_PCBS)
 			"  RxMboxSize=" 	toSTR(CONFIG_UDP_RECVMBOX_SIZE) strNL);
-	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
-	void dbg_lwip_tcp_pcb_show(void); dbg_lwip_tcp_pcb_show();
-	void dbg_lwip_udp_pcb_show(void); dbg_lwip_udp_pcb_show();
+	#endif
 }
