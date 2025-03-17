@@ -172,7 +172,7 @@ static int xNetMbedInit(netx_t * psC) {
 	psC->error = 0;
 	char * pcName = NULL;
 	#if	(CONFIG_MBEDTLS_DEBUG > 0)
-		const u8_t XlatSL2TLS[8] = {0, 1, 1, 2, 3, 4, 5, 5};
+		const u8_t XlatSL2TLS[8] = {0, 1, 1, 1, 2, 3, 4, 4};
 		u8_t Level = XlatSL2TLS[xSyslogGetConsoleLevel()];
 		mbedtls_debug_set_threshold(Level);
 		mbedtls_ssl_conf_dbg(&psC->psSec->conf, vNetMbedDebug, psC);
