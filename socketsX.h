@@ -272,6 +272,8 @@ int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
 
 /**
  * @brief	Loop through all open sockets looking for and closing duplicate connections
+ * @param[in]	port to be checked for, in NETWORK (not HOST) format
+ * @return	number of zombies closed
  */
 int xNetCloseDuplicates(u16_t port);
 
