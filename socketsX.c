@@ -43,9 +43,10 @@
 
 // ######################################## Local constants ########################################
 
-// ######################################## Local constants ########################################
-
 // ###################################### Local only functions #####################################
+
+// https://stackoverflow.com/questions/47179793/how-to-gracefully-handle-accept-giving-emfile-and-close-the-connection
+// https://esp32.io/viewtopic.php?t=12288
 
 /**
  * @brief	process socket (incl MBEDTLS) error codes  using syslog functionality
@@ -110,6 +111,7 @@ int xNetReConnect(netx_t * psC) {
 	int iRV = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
 
 	/* Filter out qualifying error codes */
+	//https://stackoverflow.com/questions/47179793/how-to-gracefully-handle-accept-giving-emfile-and-close-the-connection
 	if (iRV != ECONNABORTED && iRV != EHOSTUNREACH && iRV != ENOTCONN)
 		return erFAILURE;								/* and return error if not qualified */
 
@@ -588,7 +590,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 		psC->ConErr++;
 		return erFAILURE;
 	}
-	psC->ConOK++;
+	psC->ConOK++;;
 #if (appRECONNECT > 0)
 	int	iRV, RCcnt = 0;
 	do {
