@@ -102,6 +102,7 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
  * @param[in]	psCtx pointer to suddenly disconnected context
  * @return		result from xNetOpen()
  */
+#if (appRECONNECT > 0)
 int xNetReConnect(netx_t * psC) {
 	if (psC->pHost == NULL)								/* MUST be a client context */
 		return erFAILURE;
@@ -136,6 +137,7 @@ int xNetReConnect(netx_t * psC) {
 	}
 	return iRV;
 }
+#endif
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
@@ -744,9 +746,15 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
 			(Code < 0) ? pcStrError(Code) : "iRV", Code);
+#if (appRECONNECT > 0)
 	iRV += wprintfx(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]  [RCerr=%d vs %d]" strNL,
 			psC->trynow, psC->trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
 			psC->d.val, psC->flags, psC->error, psC->ConErr, psC->ConOK, psC->ReConErr, psC->ReConOK);
+#else
+	iRV += wprintfx(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]" strNL,
+			psC->trynow, psC->trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
+			psC->d.val, psC->flags, psC->error, psC->ConErr, psC->ConOK);
+#endif
 	if (psC->d.d && pBuf && xLen)
 		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
 	if (fmTST(aNL))
