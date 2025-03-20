@@ -83,28 +83,29 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	 * d) will cause the system to want to send more data to the (closed) socket.....
 	 * 
 	 * In order to avoid recursing back into syslog in cases of network errors
-	 * encountered in the syslog connection, we check on the bSyslog flag.
-	 * If set, we change the severity to ONLY go to the console and
-	 * not attempt to go out the network, which would bring it back here
-	 * Hence to ensure Syslog related errors does not get logged, lift the level
+	 * encountered in the syslog connection, we check on the NoSyslog flag.
 	 */
-	/* if error anything but EAGAIN or is EAGAIN but d.ea flag is set for debugging, report the error*/
-	if ((psC->bSyslog == 0) &&
-		(psC->error != EAGAIN || (psC->error == EAGAIN && psC->d.ea))) {
+	if (psC->c.NoSyslog)
+		goto exit;
+	if (iRV != EAGAIN || (iRV == EAGAIN && psC->d.ea)) {	/* if not EAGAIN or EAGAIN but d.ea flag is set */
+		char * pcMess;										/* report the error */
+		bool fAlloc;
 		// Step 2: Map error code to message
-		if (INRANGE(mbedERROR_SMALLEST, psC->error, mbedERROR_BIGGEST)) {
+		if (INRANGE(mbedERROR_SMALLEST, iRV, mbedERROR_BIGGEST)) {
 			pcMess = malloc(xnetBUFFER_SIZE);
 			fAlloc = 1;
-			mbedtls_strerror(psC->error, pcMess, xnetBUFFER_SIZE);
+			mbedtls_strerror(iRV, pcMess, xnetBUFFER_SIZE);
 		} else {
-			pcMess = (char *) pcStrError(psC->error);
+			pcMess = (char *) pcStrError(iRV);
+			fAlloc = 0;
 		}
 		// Step 3: Process error code and message
 		const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : "localhost";
-		vSyslog(SL_PRI(SL_FAC_LOGALERT, SL_SEV_ERROR), pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, psC->error, psC->error);
+		vSyslog(SL_PRI(SL_FAC_LOGALERT, SL_SEV_ERROR), pFname, "%s:%d %s(%d/x%X)", pHost, ntohs(psC->sa_in.sin_port), pcMess, iRV, iRV);
 		if (fAlloc)
 			free(pcMess);
 	}
+exit:
 	return erFAILURE;
 }
 
