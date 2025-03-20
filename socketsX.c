@@ -285,7 +285,7 @@ static int xNetGetHost(netx_t * psC) {
 		struct sockaddr_in * sa_in = (struct sockaddr_in *) psAI->ai_addr;
 		psC->sa_in.sin_addr.s_addr = sa_in->sin_addr.s_addr;
 		if (debugTRACK && psC->d.h)
-			xNetReport(NULL, psC, __FUNCTION__, 0, 0, 0);
+			xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	}
 	if (psAI != NULL)
 		freeaddrinfo(psAI);
