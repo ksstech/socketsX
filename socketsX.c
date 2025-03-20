@@ -49,23 +49,33 @@
 // https://esp32.io/viewtopic.php?t=12288
 
 /**
+ * @brief	Extract error code from errno/h_errno (LWIP/MbedTLS)
+ * @param[in]	Remap range of error codes to ENOTCONN or EAGAIN
+ * @return	posssibly remapped error code obtained
+ */
+static int xNetErrorXlat(netx_t * psC) {
+	// extract error code from network stack
+	psC->error = errno ? errno : h_errno ? h_errno : psC->error;
+	if (psC->error) {
+		if (psC->error == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+			psC->error = ENOTCONN;
+		} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN || psC->error == EWOULDBLOCK) {
+			psC->error = EAGAIN;
+		}
+	}
+	return psC->error;
+}
+
+/**
  * @brief	process socket (incl MBEDTLS) error codes  using syslog functionality
  * @param	psC socket context
  * @return	adjusted error code
  */
 static int xNetSyslog(netx_t * psC, const char * pFname) {
-	// save error code from network stack
-	psC->error = (errno != 0) ? errno : (h_errno != 0) ? h_errno : psC->error;
-	if (psC->error == 0)
-		return erSUCCESS;
-	bool fAlloc = 0;
-	char * pcMess = NULL;
 	// Step 1: remap error codes where required
-	if (psC->error == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-		psC->error = ENOTCONN;
-	} else if (psC->error == MBEDTLS_ERR_SSL_WANT_READ || psC->error == MBEDTLS_ERR_SSL_WANT_WRITE || psC->error == TRY_AGAIN || psC->error == EWOULDBLOCK) {
-		psC->error = EAGAIN;
-	}
+	int iRV = xNetErrorXlat(psC);
+	if (iRV == 0)
+		return erSUCCESS;
 	/* The problem with printfx() or any of the variants are
 	 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
 	 * b) and the network connection is dropped; then
