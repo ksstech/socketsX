@@ -388,10 +388,9 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 	if (ttWait != portMAX_DELAY)
 		ttWait = (ttWait <= xnetTICKS_STEP) ? xnetTICKS_STEP : u32Round(ttWait, xnetTICKS_STEP);
 	do {
-		EventBits_t tEB = halEventGetStatus(flagLX_ANY);
-		if ((tEB & flagLX_STA) == flagLX_STA)			/* check if LX STA mode is functional */
+		if (halEventGetStatus(flagLX_STA) == flagLX_STA)	/* check if LX STA mode is functional */
 			return flagLX_STA;							/* if so, return STA flag */
-		if ((tEB & flagLX_SAP) == flagLX_SAP)			/* if not, check if LX SAP is functional */
+		if (halEventGetStatus(flagLX_SAP) == flagLX_SAP)	/* if not, check if LX SAP is functional */
 			return flagLX_SAP;							/* if so, return SAP status flag */
 		vTaskDelay(xnetTICKS_STEP);						/* if neither SAP or STA functional */
 		if (ttWait != portMAX_DELAY)					/* wait for calculated interval */
