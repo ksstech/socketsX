@@ -25,6 +25,8 @@
 #endif
 #include "mbedtls/error.h"
 
+#include "task_aep.h"
+
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
@@ -750,7 +752,7 @@ int xNetCloseDuplicates(u16_t port) {
 		if (iRV == -1)
 			continue;
 	    if ((iRV == 0) && (addr.sin_port == port)) {
-			close(sock);
+			close(sock);		/* what about SSL connections */
 			++Count;
 			SL_WARN("Closing sd=%d -> %-#I:%d", sock, addr.sin_addr.s_addr, htons(addr.sin_port));
 		} else {
