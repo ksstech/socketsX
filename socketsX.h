@@ -122,21 +122,22 @@ typedef struct __attribute__((aligned(4))) netx_t {
 	i16_t sd;						// socket descriptor
 	u16_t tOut;						// last timeout in mSec
 	u16_t soRcvTO;					// socket option receive timeout
-	union {
+	union xnet_cfg_u {
 		struct __attribute__((packed)) {
 			u8_t trymax;			// max times to try read
 			u8_t trynow;			// times tried
 			u8_t type:3;			// valid 1->5, STREAM/TCP, DGRAM/UDP or RAW/RAW
-			u8_t bSyslog:1;			// call from syslog, change level in xNetGetError()
-#if (appRECONNECT > 0)
-			u8_t ReConnect:2;		// 0=disable 1~3=automatic reconnection attempts
-			u16_t spare:10;
-#else
+			u8_t NoSyslog:1;		// Minimize or disable syslog in xNetSyslog
+		#if (appRECONNECT > 0)
+			u8_t RCmax:4;			// 0=disable 1~3=automatic reconnection attempts
+			u8_t RCcnt:4;
+			u16_t spare:4;
+		#else
 			u16_t spare:12;
-#endif
+		#endif
 		};
-		u32_t sU32;					// all the flags as single member
-	};
+		u32_t cU32;					// all the flags as single member
+	} c;
 	union netx_dbg_u {				// debug control flags
 		struct __attribute__((packed)) {
 			u8_t o:1;				// open & socket

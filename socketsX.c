@@ -225,7 +225,7 @@ static int xNetMbedInit(netx_t * psC) {
 	// mbedtls_ssl_set_hostname();
 	iRV = mbedtls_ssl_config_defaults(&psC->psSec->conf,
 			psC->pHost ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
-			psC->type == SOCK_STREAM ? MBEDTLS_SSL_TRANSPORT_STREAM : MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+			psC->c.type == SOCK_STREAM ? MBEDTLS_SSL_TRANSPORT_STREAM : MBEDTLS_SSL_TRANSPORT_DATAGRAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
 	if (iRV != 0) {
 		pcName = "mbedtls_ssl_config_defaults";
@@ -271,7 +271,7 @@ static int xNetGetHost(netx_t * psC) {
 	struct addrinfo * psAI;
 	struct addrinfo sAI = { 0 };
 	sAI.ai_family = psC->sa_in.sin_family;
-	sAI.ai_socktype = psC->type;
+	sAI.ai_socktype = psC->c.type;
 	char portnum[16];
 	snprintfx(portnum, sizeof(portnum), "%u", ntohs(psC->sa_in.sin_port));
 	int iRV = getaddrinfo(psC->pHost, portnum, &sAI, &psAI);
@@ -294,7 +294,7 @@ static int xNetGetHost(netx_t * psC) {
  * @return		erSUCCESS or erFAILURE with psC->error set to the code
  */
 static int xNetSocket(netx_t * psC)  {
-	int iRV = socket(psC->sa_in.sin_family, psC->type, IPPROTO_IP);
+	int iRV = socket(psC->sa_in.sin_family, psC->c.type, IPPROTO_IP);
 	/* Socket() can return any number from 0 upwards as a valid descriptor but since
 	 * 0=stdin, 1=stdout & 2=stderr normal descriptor would be greater than 2 ie 3+ */
 	if (iRV < 0)
@@ -344,7 +344,7 @@ static int xNetBindListen(netx_t * psC) {
 	}
 	if (iRV == 0) {
 		iRV = bind(psC->sd, &psC->sa, sizeof(struct sockaddr_in));
-		if (iRV == 0 && psC->type == SOCK_STREAM)
+		if (iRV == 0 && psC->c.type == SOCK_STREAM)
 			iRV = listen(psC->sd, 10);	// config for listen, max queue backlog of 10
 	}
 	if (iRV != 0)
@@ -508,7 +508,7 @@ int	xNetAccept(netx_t * psServCtx, netx_t * psClntCtx, u32_t mSecTime) {
 	// The server socket had flags set for BIND & LISTEN but the client
 	// socket should just be connected and marked same type & flags
 	psClntCtx->sd = iRV;
-	psClntCtx->type = psServCtx->type;						// Make same type TCP/UDP/RAW
+	psClntCtx->c.type = psServCtx->c.type;						// Make same type TCP/UDP/RAW
 	psClntCtx->d.val = psServCtx->d.val;					// inherit all flags
 	psClntCtx->psSec = psServCtx->psSec;					// TBC same security ??
 	if (debugTRACK && psServCtx->d.a) {
@@ -642,12 +642,12 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 #if 0
 u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
-	if (mSecTime == (psC->trymax * psC->tOut))			// same as previous
+	if (mSecTime == (psC->c.trymax * psC->tOut))			// same as previous
 		return psC->tOut;
-	psC->trynow	= 0;
+	psC->c.trynow	= 0;
 	// must pass thru mSecTime of 0 (blocking) and 1 (non-blocking)
 	if (mSecTime <= flagXNET_NONBLOCK) {
-		psC->trymax	= 1;
+		psC->c.trymax	= 1;
  		psC->tOut = mSecTime;
 		return mSecTime;
 	}
@@ -655,11 +655,11 @@ u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
 	if (mSecTime < configXNET_MIN_TIMEOUT)
 		mSecTime = configXNET_MIN_TIMEOUT;
 	if ((mSecTime / configXNET_MIN_TIMEOUT) > configXNET_MAX_RETRIES) {
-		psC->trymax = configXNET_MAX_RETRIES;
+		psC->c.trymax = configXNET_MAX_RETRIES;
 	} else {
-		psC->trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT;
+		psC->c.trymax = (mSecTime + configXNET_MIN_TIMEOUT - 1) / configXNET_MIN_TIMEOUT;
 	}
-	psC->tOut = (psC->trymax > 0) ? (mSecTime / psC->trymax) : mSecTime;
+	psC->tOut = (psC->c.trymax > 0) ? (mSecTime / psC->c.trymax) : mSecTime;
 	if (debugTRACK && psC->d.t)
 		xNetReport(NULL, psC, __FUNCTION__, mSecTime, 0, 0);
 	return psC->tOut;
@@ -681,7 +681,7 @@ int	xNetSendBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 		} else if (psC->error != EAGAIN) {
 			break;
 		}
-	} while((++psC->trynow < psC->trymax) && (xLenDone < xLen));
+	} while((++psC->c.trynow < psC->c.trymax) && (xLenDone < xLen));
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
 
@@ -697,7 +697,7 @@ int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 		} else if (psC->error != EAGAIN) {
 			break;
 		}
- 	} while ((++psC->trynow < psC->trymax) && (xLenDone < xLen));
+ 	} while ((++psC->c.trynow < psC->c.trymax) && (xLenDone < xLen));
 	return (xLenDone > 0) ? xLenDone : iRV;
 }
 #endif
@@ -756,16 +756,16 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 	iRV += wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d ",
 			xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
-			(psC->type == SOCK_DGRAM) ? "udp" : (psC->type == SOCK_STREAM) ? "tcp" : "raw",
+			(psC->c.type == SOCK_DGRAM) ? "udp" : (psC->c.type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
 			(Code < 0) ? pcStrError(Code) : "iRV", Code);
 #if (appRECONNECT > 0)
 	iRV += wprintfx(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]  [RCerr=%d vs %d]" strNL,
-			psC->trynow, psC->trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
+			psC->c.trynow, psC->c.trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
 			psC->d.val, psC->flags, psC->error, psC->ConErr, psC->ConOK, psC->ReConErr, psC->ReConOK);
 #else
 	iRV += wprintfx(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]" strNL,
-			psC->trynow, psC->trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
+			psC->c.trynow, psC->c.trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
 			psC->d.val, psC->flags, psC->error, psC->ConErr, psC->ConOK);
 #endif
 	if (psC->d.d && pBuf && xLen)
