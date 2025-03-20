@@ -28,6 +28,7 @@
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
+#define	debugRECONNECT				(debugFLAG & 0x0001)
 #define	debugTIMING					(debugFLAG_GLOBAL & debugFLAG & 0x1000)
 #define	debugTRACK					(debugFLAG_GLOBAL & debugFLAG & 0x2000)
 #define	debugPARAM					(debugFLAG_GLOBAL & debugFLAG & 0x4000)
@@ -38,7 +39,7 @@
 #define netxBUILD_SPC				0					// en/disable Secure PreConnect support
 #define	xnetBUFFER_SIZE 			1024
 #define xnetMS_CONNECTED			3500				// was 10000
-#define xnetMS_RECONNECT			2000				// 
+#define xnetMS_RECONNECT			4000				// avg 3.54sec 
 #define xnetTICKS_STEP				10
 
 // ######################################## Local constants ########################################
@@ -116,38 +117,41 @@ exit:
  */
 #if (appRECONNECT > 0)
 int xNetReConnect(netx_t * psC) {
+	int iRV = erFAILURE;
 	if (psC->pHost == NULL)								/* MUST be a client context */
-		return erFAILURE;
-	/* recover error code from network stack */
-	int iRV = (errno != 0) ? errno : (h_errno != 0) ? h_errno : 0;
-
+		goto exit;
 	/* Filter out qualifying error codes */
-	//https://stackoverflow.com/questions/47179793/how-to-gracefully-handle-accept-giving-emfile-and-close-the-connection
-	if (iRV != ECONNABORTED && iRV != EHOSTUNREACH && iRV != ENOTCONN)
-		return erFAILURE;								/* and return error if not qualified */
-
-	netx_t sTmpCtx;										/* temporary storage for disconnected context */
-	memcpy(&sTmpCtx, psC, sizeof(netx_t));				/* save disconnected context in case reconnect fails */
+	int origErr = xNetErrorXlat(psC);					/* recover error code from network stack */
+	if (origErr != ECONNABORTED && origErr != EHOSTUNREACH && origErr != ENOTCONN)
+		goto exit;
 	// now setup the context for a retry
-	psC->bSyslog = 1;									/* ensure only going to console */
-	psC->ReConnect = 0;									/* Disable reconnect within xNetReConnect() */
-	if (xNetWaitLx(pdMS_TO_TICKS(xnetMS_RECONNECT)) == flagLX_STA) {
-		psC->sd = 0;									/* clear some items for retry... */
-		psC->error = 0;
-		iRV = xNetOpen(psC);							/* try reconnect with failed context */
+	IF_CP(debugRECONNECT, "%#-I:%d  sd=%d" strNL, psC->sa_in.sin_addr.s_addr, ntohs(psC->sa_in.sin_port), psC->sd);
+	bool bNoSyslog = psC->c.NoSyslog;					/* save the flag */
+	psC->c.NoSyslog = 1;								/* disable xNetSyslog output */
+	IF_EXEC(debugRECONNECT, psC->d.o=1; psC->d.h=1; psC->d.t=1; );
+	while(psC->c.RCcnt < psC->c.RCmax) {
+		xNetClose(psC);
+		++psC->c.RCcnt;
+		if (halEventWaitStatus(flagLX_STA,pdMS_TO_TICKS(xnetMS_RECONNECT))) {
+			iRV = xNetOpen(psC);						/* try reconnect with failed context */
+			if (iRV > erFAILURE)
+				break;
+		} else {
+			iRV = erTIMEOUT;
+		}
+	}
+	psC->c.NoSyslog = bNoSyslog;
+	IF_CP(debugRECONNECT, "  iRV=%d  sd=%d", iRV, psC->sd);
+	if (iRV > erFAILURE) {								/* if successful */
+		++psC->ReConOK;
 	} else {
-		iRV = erFAILURE;
+		xNetClose(psC);
+		iRV = psC->error = origErr;						/* restore original error code */
+		++psC->ReConErr;
 	}
-
-	if (iRV >= 0) {										/* if successful */
-		psC->sU32 = sTmpCtx.sU32;						/* restore original state of config */
-		xNetClose(&sTmpCtx);							/* successfully reconnected, close failed context */
-		psC->error = 0;									/* clear error in original, now restored context */
-		psC->ReConOK++;
-	} else {											/* if reconnect failed */
-		memcpy(psC, &sTmpCtx, sizeof(netx_t));			/* restore original failed context */
-		psC->ReConErr++;
-	}
+	IF_CP(debugRECONNECT, "  FSM=%d  ic=%d", xMqttState, sClient.isconnected);
+	IF_CP(debugRECONNECT, "  iRV=%d  RC=%d/%d  Err=%d" strNL, iRV, psC->c.RCcnt, psC->c.RCmax, psC->ReConErr);
+exit:
 	return iRV;
 }
 #endif
