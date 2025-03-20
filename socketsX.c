@@ -542,6 +542,13 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 								(Flag == selFLAG_EXCEPT)? &fdsSet : 0, &timeVal);
 	if (iRV < 0)
 		return xNetSyslog(psC, __FUNCTION__);
+#if 0
+	if (FD_ISSET(psC->sd, &fdsSet)) {        /* select() exception set using getsockopt() */
+        socklen_t optlen = sizeof(int);
+        getsockopt(psC->sd, SOL_SOCKET, SO_ERROR, &psC->error, &optlen);
+		return xNetSyslog(psC, __FUNCTION__);
+    }
+#endif
 	if (debugTRACK && psC->d.s) {
 		const char * xNetSelectType[4] = { "RD/select", "WR/select", "EX/select", "UNKNOWN/select" };
 		xNetReport(NULL, psC, xNetSelectType[Flag & 3], iRV, 0, 0);
