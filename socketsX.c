@@ -607,8 +607,8 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 		return erFAILURE;
 	}
 	psC->ConOK++;;
+	int	iRV;
 #if (appRECONNECT > 0)
-	int	iRV, RCcnt = 0;
 	do {
 		psC->error = 0;
 		if (psC->psSec) 		iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen);
@@ -617,14 +617,16 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 			socklen_t i16AddrSize = sizeof(struct sockaddr_in);
 			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 		}
-		if (iRV >= 0)									/* successful ? */
-			break;										/* yes, exit loop */
-		if (psC->ReConnect)								/* no, reconnect enabled ? */
-			xNetReConnect(psC);							/* yes, try to reconnect */
-		++RCcnt;
-	} while (RCcnt <= psC->ReConnect);
+		if (iRV > 0) {									/* successful ? */
+			psC->c.RCcnt = 0;
+			break;										/* exit loop */
+		}
+		/* reconnection logic */
+		if (psC->c.RCcnt == psC->c.RCmax)				/* reconnect attempts gone ? */
+			break;
+		iRV = xNetReConnect(psC);						/* try (again) to reconnect */
+	} while (iRV >= erSUCCESS);
 #else
-	int	iRV;
 	psC->error = 0;
 	if (psC->psSec)			iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen);
 	else if (psC->pHost)	iRV = recv(psC->sd, pBuf, xLen, psC->flags);
