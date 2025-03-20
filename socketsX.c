@@ -403,20 +403,20 @@ EventBits_t xNetWaitLx(TickType_t ttWait) {
 int	xNetOpen(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	EventBits_t ebX = xNetWaitLx(pdMS_TO_TICKS(xnetMS_CONNECTED));
+	int	iRV = erFAILURE;
 	if (ebX == 0) {										// Neither STA nor SAP level functional, get out...
 		psC->error = ENOTCONN;
 		psC->ConErr++;
-		return erFAILURE;								// get out of here...
+		goto exit;
 	}
 	psC->ConOK++;
-	int	iRV;
 	psC->error = 0;
 	// STEP 0: just for mBed TLS Initialize the RNG and the session data
 	if (psC->psSec) {
 		iRV = xNetMbedInit(psC);
 		if (iRV != erSUCCESS) {
 			vNetMbedDeInit(psC); 
-			return iRV;
+			goto exit;
 		}
 	}
 
@@ -426,7 +426,7 @@ int	xNetOpen(netx_t * psC) {
 			return erFAILURE;
 		iRV = xNetGetHost(psC);
 		if (iRV < erSUCCESS)
-			return iRV;
+			goto exit;
 	} else {											// Either STA or SAP is OK....
 		psC->sa_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
@@ -434,11 +434,11 @@ int	xNetOpen(netx_t * psC) {
 	// STEP 2: open a [secure] socket to the remote
 	iRV = xNetSocket(psC);
 	if (iRV < erSUCCESS)
-		return iRV;
+		goto exit;
 	if (psC->soRcvTO) {									// If 0, leave default, 
 		iRV = xNetSetRecvTO(psC, psC->soRcvTO);
 		if (iRV < erSUCCESS)
-			return iRV;
+			goto exit;
 	}
 
 	// STEP 3: configure the specifics (method, mask & certificate files) of the SSL/TLS component
@@ -446,20 +446,21 @@ int	xNetOpen(netx_t * psC) {
 		if (psC->psSec) {
 			iRV = xNetSecurePreConnect(psC);
 			if (iRV < erSUCCESS)
-				return iRV;
+				goto exit;
 		}
 	#endif
 
 	// STEP 4: Initialize Client or Server connection
 	iRV = (psC->pHost) ? xNetConnect(psC) : xNetBindListen(psC);
 	if (iRV < erSUCCESS)
-		return iRV;
+		goto exit;
 	// STEP 5: configure the specifics (method, mask & certificate files) of the SSL/TLS component
 	if (psC->psSec) {
 		iRV = xNetSecurePostConnect(psC);
 		if (iRV < erSUCCESS)
-			return iRV;
+			goto exit;
 	}
+exit:
 	if (debugTRACK && psC->d.o)
 		xNetReport(NULL, psC, __FUNCTION__, iRV, 0, 0);
 	return iRV;
