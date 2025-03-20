@@ -551,7 +551,6 @@ int	xNetSelect(netx_t * psC, uint8_t Flag) {
 
 int	xNetClose(netx_t * psC) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
-	int	iRV = erSUCCESS;
 	if (psC->sd >= 0) {
 		if (debugTRACK && psC->d.cl)
 			xNetReport(NULL, psC, "xNetClose1", psC->error, 0, 0);
@@ -559,12 +558,13 @@ int	xNetClose(netx_t * psC) {
 			mbedtls_ssl_close_notify(&psC->psSec->ssl);
 			vNetMbedDeInit(psC);
 		}
-		iRV = close(psC->sd);
+		int iRV = close(psC->sd);
 		psC->sd = -1;								// mark as closed
 		if (debugTRACK && psC->d.cl)
 			xNetReport(NULL, psC, "xNetClose2", iRV, 0, 0);
+		return iRV;
 	}
-	return iRV;
+	return erSUCCESS;
 }
 
 // ##################################### Basic Send/Receive ########################################
