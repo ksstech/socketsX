@@ -767,26 +767,26 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 	const char * pHost = (psC->pHost && *psC->pHost) ? psC->pHost : (IPaddr == nvsWifi.ipSTA) ? "localhost" : "unknown";
 	int iRV = 0;
 	if (psR == NULL)
-		iRV += wprintfx(psR, "%!.3R ", halTIMER_ReadRunTime());
-	iRV += wprintfx(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d ",
+		iRV += report(psR, "%!.3R ", halTIMER_ReadRunTime());
+	iRV += report(psR, "%C%-s%C\t%s %s://%-I:%d (%s) sd=%d %s=%d ",
 			xpfCOL(colourFG_CYAN,0), pFname, xpfCOL(attrRESET,0),
 			(psC->sa_in.sin_family == AF_INET) ? "ip4" : (psC->sa_in.sin_family == AF_INET6) ? "ip6" : "ip?",
 			(psC->c.type == SOCK_DGRAM) ? "udp" : (psC->c.type == SOCK_STREAM) ? "tcp" : "raw",
 			ntohl(IPaddr), ntohs(psC->sa_in.sin_port), pHost, psC->sd,
 			(Code < 0) ? pcStrError(Code) : "iRV", Code);
 #if (appRECONNECT > 0)
-	iRV += wprintfx(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]  [RCerr=%d vs %d]" strNL,
+	iRV += report(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]  [RCerr=%d vs %d]" strNL,
 			psC->c.trynow, psC->c.trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
 			psC->d.val, psC->flags, psC->error, psC->ConErr, psC->ConOK, psC->ReConErr, psC->ReConOK);
 #else
-	iRV += wprintfx(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]" strNL,
+	iRV += report(psR, "Try=%hhu/%hhu TO=%hu%s D=0x%02X F=0x%X E=%d  [Cerr=%d vs %d]" strNL,
 			psC->c.trynow, psC->c.trymax, psC->tOut, (psC->tOut == 0) ? "/BLK" : (psC->tOut == 1) ? "/NB" : "mS",
 			psC->d.val, psC->flags, psC->error, psC->ConErr, psC->ConOK);
 #endif
 	if (psC->d.d && pBuf && xLen)
-		iRV += wprintfx(psR, "%!'+hhY" strNL, xLen, pBuf);
+		iRV += report(psR, "%!'+hhY" strNL, xLen, pBuf);
 	if (fmTST(aNL))
-		iRV += wprintfx(psR, strNL);
+		iRV += report(psR, strNL);
 	return iRV;
 }
 
@@ -821,13 +821,13 @@ void xNetReportStats(report_t * psR) {
 	    socklen_t addr_size = sizeof(struct sockaddr_in);
 	    int res = getpeername(sock, (struct sockaddr *)&addr, &addr_size);
 	    if (res == 0)
-			wprintfx(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, htons(addr.sin_port));
+			report(psR, "sock: %d -- addr: %-#I:%d" strNL, sock, addr.sin_addr.s_addr, htons(addr.sin_port));
 	}
 	void dbg_lwip_stats_show(void); dbg_lwip_stats_show();
 	#if 0
 	void dbg_lwip_tcp_pcb_show(void); dbg_lwip_tcp_pcb_show();
 	void dbg_lwip_udp_pcb_show(void); dbg_lwip_udp_pcb_show();
-	wprintfx(psR,
+	report(psR,
 		#if	(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER == 1)
 			"Wifi: Static Tx="	toSTR(CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM)
 			"  Rx="  			toSTR(CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM)
