@@ -160,7 +160,7 @@ exit:
 
 // Based on example found at https://github.com/ARMmbed/mbedtls/blob/development/programs/ssl/ssl_client1.c
 void vNetMbedDebug(void * ctx, int level, const char * file, int line, const char * str) {
-	wprintfx(NULL, "%s Lev=%d '%s' %s:%d" strNL, __FUNCTION__, level, str, level == 4 ? file : strNULL, level == 4 ? line : 0);
+	PX("%s Lev=%d '%s' %s:%d" strNL, __FUNCTION__, level, str, level == 4 ? file : strNULL, level == 4 ? line : 0);
 }
 
 /**
@@ -169,15 +169,15 @@ void vNetMbedDebug(void * ctx, int level, const char * file, int line, const cha
  */
 static int xNetMbedVerify(void *data, mbedtls_x509_crt *crt, int depth, u32_t *flags) {
 	(void) data;
-	wprintfx(NULL, "xNetMbedVerify: Verifying certificate at depth %d:" strNL, depth);
+	PX("xNetMbedVerify: Verifying certificate at depth %d:" strNL, depth);
 	pc_t pBuf = malloc(xnetBUFFER_SIZE);
 	mbedtls_x509_crt_info(pBuf, xnetBUFFER_SIZE, "  ", crt);
-	wprintfx(NULL, pBuf);
+	PX(pBuf);
 	if (*flags == 0) {
-		wprintfx(NULL, "xNetMbedVerify: No verification issue for this certificate" strNL);
+		PX("xNetMbedVerify: No verification issue for this certificate" strNL);
 	} else {
 		mbedtls_x509_crt_verify_info(pBuf, xnetBUFFER_SIZE-1, "  ! ", *flags);
-		wprintfx(NULL, "xNetMbedVerify: %s" strNL, pBuf);
+		PX("xNetMbedVerify: %s" strNL, pBuf);
 	}
 	free(pBuf);
 	return 0;
@@ -797,20 +797,20 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 */
 void __wrap_stats_display_proto(struct stats_proto *p, const char *name) {
 	#define hdrPROTO "%s\txmit\trecv\tfw\tdrop\tchkerr\tlenerr\tmemerr\trterr\tproterr\topterr\terr\tcachehit" strNL
-	wprintfx(NULL, hdrPROTO, name);
-	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d", p->xmit, p->recv, p->fw, p->drop, p->chkerr, p->lenerr);
-	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d" strNL, p->memerr, p->rterr, p->proterr, p->opterr, p->err, p->cachehit);
+	PX(hdrPROTO, name);
+	PX("\t%d\t%d\t%d\t%d\t%d\t%d", p->xmit, p->recv, p->fw, p->drop, p->chkerr, p->lenerr);
+	PX("\t%d\t%d\t%d\t%d\t%d\t%d" strNL, p->memerr, p->rterr, p->proterr, p->opterr, p->err, p->cachehit);
 }
 
 void __wrap_stats_display_igmp(struct stats_igmp *p, const char *name) {
 	#define hdrIGMP "%s\txmit\trecv\tdrop\tchkerr\tlenerr\tmemerr\tproterr\tRXv1\tRXgrp\tRXgen\tRXrprt\tTXjoin\tTXleave\tTXrprt" strNL
-	wprintfx(NULL, hdrIGMP, name);
-	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d\t%d", p->xmit, p->recv, p->drop, p->chkerr, p->lenerr, p->memerr, p->proterr);
-	wprintfx(NULL, "\t%d\t%d\t%d\t%d\t%d\t%d\t%d" strNL, p->rx_v1, p->rx_group, p->rx_general, p->rx_report, p->tx_join, p->tx_leave, p->tx_report);
+	PX(hdrIGMP, name);
+	PX("\t%d\t%d\t%d\t%d\t%d\t%d\t%d", p->xmit, p->recv, p->drop, p->chkerr, p->lenerr, p->memerr, p->proterr);
+	PX("\t%d\t%d\t%d\t%d\t%d\t%d\t%d" strNL, p->rx_v1, p->rx_group, p->rx_general, p->rx_report, p->tx_join, p->tx_leave, p->tx_report);
 }
 
 void __wrap_stats_display_sys(struct stats_sys *p) {
-	wprintfx(NULL, "SYS\tSEMused\tSEMmax\tSEMerr\tMUXused\tMUXmax\tMUXerr\tMBXused\tMBXmax\tMBXerr" strNL "\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d" strNL,
+	PX("SYS\tSEMused\tSEMmax\tSEMerr\tMUXused\tMUXmax\tMUXerr\tMBXused\tMBXmax\tMBXerr" strNL "\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d" strNL,
 		p->sem.used, p->sem.max, p->sem.err, p->mutex.used, p->mutex.max, p->mutex.err, p->mbox.used, p->mbox.max, p->mbox.err);
 }
 
