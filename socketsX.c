@@ -6,7 +6,7 @@
 #include "hal_options.h"
 #include "errors_events.h"
 #include "socketsX.h"
-#include "printfx.h"
+#include "report.h"
 #include "syslog.h"
 #include "systiming.h"
 #include "utilitiesX.h"
