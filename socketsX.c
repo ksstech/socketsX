@@ -756,7 +756,7 @@ int xNetCloseDuplicates(u16_t port) {
 			++Count;
 			SL_WARN("Closing sd=%d -> %-#I:%d", sock, addr.sin_addr.s_addr, htons(addr.sin_port));
 		} else {
-			SL_NOT("Ignoring sd=%d -> %-#I:%d (iRV=%d)", sock, addr.sin_addr.s_addr, htons(addr.sin_port), iRV);
+			SL_INFO("Ignoring sd=%d -> %-#I:%d (iRV=%d)", sock, addr.sin_addr.s_addr, htons(addr.sin_port), iRV);
 		}	// (res == 0)
 	}		// (for i = 0)
 	return Count;
