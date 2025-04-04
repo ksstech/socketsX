@@ -620,6 +620,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 	int	iRV;
 #if (appRECONNECT > 0)
 	do {
+#endif
 		psC->error = 0;
 		if (psC->psSec) 		iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen);
 		else if (psC->pHost)	iRV = recv(psC->sd, pBuf, xLen, psC->flags);
@@ -627,6 +628,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 			socklen_t i16AddrSize = sizeof(struct sockaddr_in);
 			iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
 		}
+#if (appRECONNECT > 0)
 		if (iRV > 0) {									/* successful ? */
 			psC->c.RCcnt = 0;
 			break;										/* exit loop */
@@ -636,14 +638,6 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 			break;
 		iRV = xNetReConnect(psC);						/* try (again) to reconnect */
 	} while (iRV >= erSUCCESS);
-#else
-	psC->error = 0;
-	if (psC->psSec)			iRV = mbedtls_ssl_read( &psC->psSec->ssl, (unsigned char *) pBuf, xLen);
-	else if (psC->pHost)	iRV = recv(psC->sd, pBuf, xLen, psC->flags);
-	else {												/* UDP (connection-less) */
-		socklen_t i16AddrSize = sizeof(struct sockaddr_in);
-		iRV = recvfrom(psC->sd, pBuf, xLen, psC->flags, &psC->sa, &i16AddrSize);
-	}
 #endif
 	// AMM check for possible loophole with 0 being returned, socket closed !!!
 	if (iRV < 0)
