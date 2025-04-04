@@ -77,8 +77,9 @@ static int xNetErrorXlat(netx_t * psC) {
 static int xNetSyslog(netx_t * psC, const char * pFname) {
 	// Step 1: remap error codes where required
 	int iRV = xNetErrorXlat(psC);
-	if (iRV == 0)
+	if (iRV == 0) {
 		return erSUCCESS;
+	}
 	/* The problem with printfx() or any of the variants are
 	 * a) if the channel, STDOUT or STDERR, is redirected to a UDP/TCP connection
 	 * b) and the network connection is dropped; then
@@ -88,8 +89,9 @@ static int xNetSyslog(netx_t * psC, const char * pFname) {
 	 * In order to avoid recursing back into syslog in cases of network errors
 	 * encountered in the syslog connection, we check on the NoSyslog flag.
 	 */
-	if (psC->c.NoSyslog)
+	if (psC->c.NoSyslog) {
 		goto exit;
+	}
 	if (iRV != EAGAIN || (iRV == EAGAIN && psC->d.ea)) {	/* if not EAGAIN or EAGAIN but d.ea flag is set */
 		char * pcMess;										/* report the error */
 		bool fAlloc;
