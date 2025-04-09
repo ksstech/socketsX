@@ -25,8 +25,6 @@
 #endif
 #include "mbedtls/error.h"
 
-#include "task_aep.h"
-
 // ############################### BUILD: debug configuration options ##############################
 
 #define	debugFLAG					0xF000
@@ -650,7 +648,7 @@ int	xNetRecv(netx_t * psC, u8_t * pBuf, int xLen) {
 
 // ##################################### Block Send/Receive ########################################
 
-#if 0
+#if (appUSE_SOCKET_LOCKS > 0)
 u32_t xNetAdjustTO(netx_t * psC, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psC));
 	if (mSecTime == (psC->c.trymax * psC->tOut))			// same as previous
@@ -715,7 +713,7 @@ int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime) {
 
 // ###################################### uBuf Send/Receive ########################################
 
-#if 0
+#if (appUSE_SOCKET_UBUF > 0)
 int	xNetSendUBuf(netx_t * psC, ubuf_t * psBuf, u32_t mSecTime) {
 	IF_myASSERT(debugPARAM, halMemorySRAM(psBuf) && halMemorySRAM(psBuf->pBuf) && (psBuf->Size > 0));
 	int	iRV = xNetSendBlocks(psC, psBuf->pBuf + psBuf->IdxRD, psBuf->Used, mSecTime);

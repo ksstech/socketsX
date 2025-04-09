@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "definitions.h"
 #include <netdb.h>
 
 #include "lwip/err.h"
@@ -16,10 +17,14 @@
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
+
 #ifdef CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 	#include "esp_crt_bundle.h"
 #endif
-#include "x_ubuf.h"
+
+#if (appUSE_SOCKET_UBUF > 0)
+    #include "x_ubuf.h"
+#endif
 
 #ifdef __cplusplus
 	extern "C" {
@@ -265,9 +270,11 @@ int	xNetRecvBlocks(netx_t * psC, u8_t * pBuf, int xLen, u32_t mSecTime);
 
 // ###################################### uBuf Send/Receive ########################################
 
+#if (appUSE_SOCKET_UBUF > 0)
 int	xNetSendUBuf(netx_t *, ubuf_t *, u32_t);
 
 int	xNetRecvUBuf(netx_t *, ubuf_t *, u32_t);
+#endif
 
 // ###################################### Socket Reporting #########################################
 
