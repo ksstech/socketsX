@@ -3,7 +3,6 @@
 #include "hal_platform.h"
 #include "hal_memory.h"
 #include "hal_network.h"								// Station IP address
-#include "hal_options.h"
 #include "errors_events.h"
 #include "socketsX.h"
 #include "syslog.h"
