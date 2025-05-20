@@ -777,8 +777,6 @@ int xNetReport(report_t * psR, netx_t * psC, const char * pFname, int Code, void
 #endif
 	if (psC->d.d && pBuf && xLen)
 		iRV += xReport(psR, "%!'+hhY" strNL, xLen, pBuf);
-	if (fmTST(aNL))
-		iRV += xReport(psR, strNL);
 	return iRV;
 }
 
