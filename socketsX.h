@@ -225,7 +225,7 @@ int	xNetClose(netx_t * psC);
  * @param	psC	pointer to connection context
  * @param	pBuf pointer to the buffer to write from
  * @param	xLen number of bytes in buffer to send
- * @return	0->xLen indicating number of bytes sent else error negative error code
+ * @return	0->xLen indicating number of bytes sent else negative error code
  */
 int	xNetSend(netx_t * psC, u8_t * pBuf, int xLen);
 
